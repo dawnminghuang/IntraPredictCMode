@@ -1,33 +1,36 @@
 #include "IntraPredicter.h"
 
-IntraPredicter::IntraPredicter(){
-    distanceCalculator = new DistanceCalculator();
-    outPutWriter = new OutputWriter();
+IntraPredicter::IntraPredicter() {
+	distanceCalculator = new DistanceCalculator();
+	outPutWriter = new OutputWriter();
 	calc_mode = CALCU_MODE_MATRI;
-    memset(outPath, 0, MAX_PATH_LENGHT);
+	memset(outPath, 0, MAX_PATH_LENGHT);
 }
 
 void IntraPredicter::predict()
 {
 }
 
-void IntraPredicter::generateOutPath(char * protocolPath,int calcMode){
+void IntraPredicter::generateOutPath(char * protocolPath, int calcMode) {
 	if (_access(protocolPath, 0) < 0) {
 		if (_mkdir(protocolPath) < 0) {
 			printf("mk fail errno = %d reason = %s \n", errno, strerror(errno));
 		}
 	}
-    strcpy(outPath, protocolPath);
-    strcpy(protocolOutPath, protocolPath);
-    if(calcMode == CALCU_MODE_ROW){
-        strcat(outPath, "modeRow");
-    }else if(calcMode == CALCU_MODE_COL){
-        strcat(outPath, "modeCol");
-    }else if(calcMode == CALCU_MODE_MATRI){
-        strcat(outPath, "modeMatri");
-    }else if(calcMode == CALCU_MODE_MATRI_4X2){
-        strcat(outPath, "modeMatri4X2");
-    }
+	strcpy(outPath, protocolPath);
+	strcpy(protocolOutPath, protocolPath);
+	if (calcMode == CALCU_MODE_ROW) {
+		strcat(outPath, "modeRow");
+	}
+	else if (calcMode == CALCU_MODE_COL) {
+		strcat(outPath, "modeCol");
+	}
+	else if (calcMode == CALCU_MODE_MATRI) {
+		strcat(outPath, "modeMatri");
+	}
+	else if (calcMode == CALCU_MODE_MATRI_4X2) {
+		strcat(outPath, "modeMatri4X2");
+	}
 
 }
 
@@ -84,11 +87,11 @@ void IntraPredicter::writePostionToFile(DistanceData* distanMatri)
 		outPutWriter->writeModeInfoToFile(distanMatri);
 	}
 }
-IntraPredicter::~IntraPredicter(){
-    if(distanceCalculator)
-        delete distanceCalculator;
-    if(outPutWriter)
-       delete outPutWriter; 
+IntraPredicter::~IntraPredicter() {
+	if (distanceCalculator)
+		delete distanceCalculator;
+	if (outPutWriter)
+		delete outPutWriter;
 }
 
 

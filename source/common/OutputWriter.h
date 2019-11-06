@@ -17,24 +17,24 @@
 #define SUCCESS 0
 #define FAILURE 1
 
-class OutputWriter{
-
-public: 
-    OutputWriter();
-    ~OutputWriter();
-    int initModeInfoFp(char * path, int predictMode);
-    int initDistanceInfoFp(char * path, char*  calc_mode);
-    int initOutputAllWriter(char * path);
-    void writeModeInfoToFile(char *data);
-    void writeModeInfoToFile(DistanceData *distancedata);
-    void writeDistanceToFile(int *distanceData, int modeNumber);
+class OutputWriter {
 
 public:
-    FILE *modeInfoFp;
-    FILE *distanceInfoFp;
-    FILE *outAllFp;
-    int predictMode;
-    char outPutPath[MAX_PATH_LENGHT];
+	OutputWriter();
+	~OutputWriter();
+	int initModeInfoFp(char * path, int predictMode);
+	int initDistanceInfoFp(char * path, char*  calc_mode);
+	int initOutputAllWriter(char * path);
+	void writeModeInfoToFile(char *data);
+	void writeModeInfoToFile(DistanceData *distancedata);
+	void writeDistanceToFile(int *distanceData, int modeNumber);
+
+public:
+	FILE *modeInfoFp;
+	FILE *distanceInfoFp;
+	FILE *outAllFp;
+	int predictMode;
+	char outPutPath[MAX_PATH_LENGHT];
 };
 #endif
 

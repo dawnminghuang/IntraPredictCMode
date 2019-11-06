@@ -11,10 +11,10 @@
 #define EXIT_FAILURE 1
 
 IntraPredicter* GetIntraPredicter(char *protocol);
-int main(int argc, char* argv[]){
-    int returnCode = EXIT_SUCCESS;
-    IntraPredicter* intraPredicter = GetIntraPredicter("vp9");
-    intraPredicter->predict();
+int main(int argc, char* argv[]) {
+	int returnCode = EXIT_SUCCESS;
+	IntraPredicter* intraPredicter = GetIntraPredicter("vp9");
+	intraPredicter->predict();
 
 
 }

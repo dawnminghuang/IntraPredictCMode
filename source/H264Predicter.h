@@ -9,24 +9,24 @@
 #define H264_PATH "D:\\work\\IntraPredict\\modeH264\\"
 
 const char g_prdict_mode_264[NUM_INTRA_PMODE_264] = {
-    3, 4, 5, 6,
-    7, 8
+	3, 4, 5, 6,
+	7, 8
 };
 
-const char g_cu_size_264[NUM_DISTANCE_SIZE_264][2]= {
-    // width/height
-    {4, 4},  {8, 8}
+const char g_cu_size_264[NUM_DISTANCE_SIZE_264][2] = {
+	// width/height
+	{4, 4},  {8, 8}
 };
 
 
-class H264Predicter:public IntraPredicter
+class H264Predicter :public IntraPredicter
 {
 
 public:
-    H264Predicter();
-    ~H264Predicter();
-    void predict();
-    void  predIntraAngAdi(DistanceData* distanMatri, int uiDirMode);
+	H264Predicter();
+	~H264Predicter();
+	void predict();
+	void  predIntraAngAdi(DistanceData* distanMatri, int uiDirMode);
 };
 
 #endif

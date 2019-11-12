@@ -1,46 +1,148 @@
-#include "Avs2Predicter.h"
+#include "AVS2PredicterCMode.h"
 
 
-AVS2Predicter::AVS2Predicter() {
+AVS2PredicterCMode::AVS2PredicterCMode() {
 	avs_dst = NULL;
 	tu_width = 0;
 	tu_height = 0;
+	pSrc = NULL;
 }
 
-AVS2Predicter::~AVS2Predicter() {
+AVS2PredicterCMode::~AVS2PredicterCMode() {
 
 }
 
-void AVS2Predicter::predict() {
+void AVS2PredicterCMode::predict() {
 	int mode_number = NUM_INTRA_PMODE_AVS;
 	int max_cu_size = 64;
 	generateOutPath(AVS2_PATH, calc_mode);
-	distanceCalculator->initDistanceCalculator(mode_number, max_cu_size, calc_mode);
 	for (int i = 0; i < NUM_MODE_INTRA_AVS; i++) {
 		int uiDirMode = g_prdict_mode_avs[i];
 		outPutWriter->initModeInfoFp(outPath, uiDirMode);
-		outPutWriter->initDstDataFp(AVS2_DATA_PATH, uiDirMode);
-		distanceCalculator->setPredictMode(uiDirMode);
+		outPutWriter->initDstDataFp(AVS2_DATA_PATH_CMODE, uiDirMode);
 		for (int j = 0; j < NUM_CU_PMODE_AVS; j++) {
 			tu_width = g_cu_size_avs[j][0];
 			tu_height = g_cu_size_avs[j][1];
 			initDstData();
-			DistanceData* distanMatri = new DistanceData(tu_width, tu_height, NUM_DISTANCE_SIZE_AVS);
-			predIntraAngAdi(distanMatri, uiDirMode);
+			pSrc = NULL;
+			if (src_data && src_data->avs2_src) {
+				pSrc = src_data->avs2_src + ((1 << CU_SIZ_LOG_AVS2) * 2);
+			}
+			xPredIntraAngAdi(pSrc, avs_dst, uiDirMode, tu_width, tu_height);
 			outPutWriter->writeDstDataToFile(avs_dst, tu_width, tu_height);
-			distanceCalculator->calcuDistance(distanMatri);
 			deinitDstData();
-			delete distanMatri;
 		}
 	}
-	writeMaxDistanceToFile(calc_mode);
 }
 
-void AVS2Predicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
-	int  *pSrc = NULL;
-	if(src_data && src_data->avs2_src){
-		pSrc = src_data->avs2_src + ((1 << CU_SIZ_LOG_AVS2) * 2);
+void AVS2PredicterCMode::xPredIntraAngAdi(int *pSrc, int **pDst, int uiDirMode, int iWidth, int iHeight)
+{
+	int  iDx, iDy, i, j, iTempDx, iTempDy, iXx, iXy, iYx, iYy;
+	int  uixyflag = 0; // 0 for x axis 1 for y axis
+	int offset, offsetx, offsety;
+	int iX, iY, iXn, iYn, iXnN1, iYnN1, iXnP2, iYnP2;
+	int iDxy;
+	int iWidth2 = iWidth << 1;
+	int iHeight2 = iHeight << 1;
+	int  *rpSrc = pSrc;
+
+	iDx = g_aucDirDx[uiDirMode];
+	iDy = g_aucDirDy[uiDirMode];
+	uixyflag = g_aucXYflg[uiDirMode];
+	iDxy = g_aucSign[uiDirMode];
+
+	for (j = 0; j < iHeight; j++) {
+		for (i = 0; i < iWidth; i++) {
+			if (iDxy < 0) {   // select context pixel based on uixyflag
+				if (uixyflag == 0) {
+					// case x-line
+					iTempDy = j - (-1);
+					iTempDx = getContextPixel(uiDirMode, 0, iTempDy, &offset);
+					iX = i + iTempDx;
+					iY = -1;
+				}
+				else {
+					// case y-line
+					iTempDx = i - (-1);
+					iTempDy = getContextPixel(uiDirMode, 1, iTempDx, &offset);
+					iX = -1;
+					iY = j + iTempDy;
+				}
+			}
+			else { // select context pixel based on the distance
+				iTempDy = j - (-1);
+				iTempDx = getContextPixel(uiDirMode, 0, iTempDy, &offsetx);
+				iTempDx = -iTempDx;
+				iXx = i + iTempDx;
+				iYx = -1;
+
+				iTempDx = i - (-1);
+				iTempDy = getContextPixel(uiDirMode, 1, iTempDx, &offsety);
+				iTempDy = -iTempDy;
+				iXy = -1;
+				iYy = j + iTempDy;
+
+				if (iYy <= -1) {
+					iX = iXx;
+					iY = iYx;
+					offset = offsetx;
+				}
+				else {
+					iX = iXy;
+					iY = iYy;
+					offset = offsety;
+				}
+			}
+
+			if (iY == -1) {
+				rpSrc = pSrc + 1;
+
+				if (iDxy < 0) {
+					iXnN1 = iX - 1;
+					iXn = iX + 1;
+					iXnP2 = iX + 2;
+				}
+				else {
+					iXnN1 = iX + 1;
+					iXn = iX - 1;
+					iXnP2 = iX - 2;
+				}
+
+				iXnN1 = min(iWidth2 - 1, iXnN1);
+				iX = min(iWidth2 - 1, iX);
+				iXn = min(iWidth2 - 1, iXn);
+				iXnP2 = min(iWidth2 - 1, iXnP2);
+				pDst[j][i] = (rpSrc[iXnN1] * (32 - offset) + rpSrc[iX] * (64 - offset) +
+					rpSrc[iXn] * (32 + offset) + rpSrc[iXnP2] * offset + 64) >> 7;
+			}
+			else if (iX == -1) {
+				rpSrc = pSrc - 1;
+
+				if (iDxy < 0) {
+					iYnN1 = iY - 1;
+					iYn = iY + 1;
+					iYnP2 = iY + 2;
+				}
+				else {
+					iYnN1 = iY + 1;
+					iYn = iY - 1;
+					iYnP2 = iY - 2;
+				}
+
+				iYnN1 = min(iHeight2 - 1, iYnN1);
+				iY = min(iHeight2 - 1, iY);
+				iYn = min(iHeight2 - 1, iYn);
+				iYnP2 = min(iHeight2 - 1, iYnP2);
+
+				pDst[j][i] = (rpSrc[-iYnN1] * (32 - offset) + rpSrc[-iY] * (64 - offset) +
+					rpSrc[-iYn] * (32 + offset) + rpSrc[-iYnP2] * offset + 64) >> 7;
+			}
+		}
 	}
+}
+
+void AVS2PredicterCMode::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
+
 	int  *rpSrc = pSrc;
 	int  iDx, iDy, i, j, iTempDx, iTempDy, iXx, iXy, iYx, iYy;
 	int  uixyflag = 0; // 0 for x axis 1 for y axis
@@ -152,7 +254,7 @@ void AVS2Predicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 
 }
 
-int AVS2Predicter::getContextPixel(int uiDirMode, int uiXYflag, int iTempD, int *offset)
+int AVS2PredicterCMode::getContextPixel(int uiDirMode, int uiXYflag, int iTempD, int *offset)
 {
 	int imult = g_aucDirDxDy[uiXYflag][uiDirMode][0];
 	int ishift = g_aucDirDxDy[uiXYflag][uiDirMode][1];
@@ -163,7 +265,7 @@ int AVS2Predicter::getContextPixel(int uiDirMode, int uiXYflag, int iTempD, int 
 
 
 
-void AVS2Predicter::saveDistanceMatri(DistanceData* distanMatri, int i, int j, int  iYnN1, int iY, int iYn, int iYnP2, int iX)
+void AVS2PredicterCMode::saveDistanceMatri(DistanceData* distanMatri, int i, int j, int  iYnN1, int iY, int iYn, int iYnP2, int iX)
 {
 	if (iX == -1) {
 		iYnN1 = -iYnN1;
@@ -178,14 +280,14 @@ void AVS2Predicter::saveDistanceMatri(DistanceData* distanMatri, int i, int j, i
 	distanMatri->distance_matri[j][i][3] = iYnP2;
 }
 
-void AVS2Predicter::initDstData() {
+void AVS2PredicterCMode::initDstData() {
 	avs_dst = new int *[tu_height];
 	for (int i = 0; i < tu_height; i++) {
 		avs_dst[i] = new int[tu_width]();
 	}
 }
 
-void AVS2Predicter::deinitDstData() {
+void AVS2PredicterCMode::deinitDstData() {
 	if (avs_dst) {
 		for (int i = 0; i < tu_height; i++) {
 			delete[] avs_dst[i];

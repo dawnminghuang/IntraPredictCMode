@@ -1,6 +1,4 @@
 #include "DistanceCalculator.h"
-
-
 DistanceCalculator::DistanceCalculator() {
 	calcu_mode = CALCU_MODE_MATRI;
 	predict_mode = 0;

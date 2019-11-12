@@ -5,10 +5,14 @@ IntraPredicter::IntraPredicter() {
 	outPutWriter = new OutputWriter();
 	calc_mode = CALCU_MODE_MATRI;
 	memset(outPath, 0, MAX_PATH_LENGHT);
+	src_data = NULL;
 }
 
-void IntraPredicter::predict()
-{
+void IntraPredicter::predict(){
+}
+
+void IntraPredicter::setPredictSrcData(SrcData *srcData){
+	src_data = srcData;
 }
 
 void IntraPredicter::generateOutPath(char * protocolPath, int calcMode) {
@@ -20,16 +24,16 @@ void IntraPredicter::generateOutPath(char * protocolPath, int calcMode) {
 	strcpy(outPath, protocolPath);
 	strcpy(protocolOutPath, protocolPath);
 	if (calcMode == CALCU_MODE_ROW) {
-		strcat(outPath, "modeRow");
+		strcat(outPath, "modeRow\\");
 	}
 	else if (calcMode == CALCU_MODE_COL) {
-		strcat(outPath, "modeCol");
+		strcat(outPath, "modeCol\\");
 	}
 	else if (calcMode == CALCU_MODE_MATRI) {
-		strcat(outPath, "modeMatri");
+		strcat(outPath, "modeMatri\\");
 	}
 	else if (calcMode == CALCU_MODE_MATRI_4X2) {
-		strcat(outPath, "modeMatri4X2");
+		strcat(outPath, "modeMatri4X2\\");
 	}
 
 }

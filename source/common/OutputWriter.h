@@ -25,14 +25,18 @@ public:
 	int initModeInfoFp(char * path, int predictMode);
 	int initDistanceInfoFp(char * path, char*  calc_mode);
 	int initOutputAllWriter(char * path);
+	int initDstDataFp(char * path, int predictMode);
 	void writeModeInfoToFile(char *data);
 	void writeModeInfoToFile(DistanceData *distancedata);
 	void writeDistanceToFile(int *distanceData, int modeNumber);
-
+	void writeDstDataToFile(int **dstData, int width, int height);
+	void writeDstDataToFile(int *dstData, int width, int tu_height, int dstStride);
+	void writeDstDataToFile(uint8_t *dstData, int tu_width, int tu_height, int dstStride);
 public:
 	FILE *modeInfoFp;
 	FILE *distanceInfoFp;
 	FILE *outAllFp;
+	FILE *dstDataFp;
 	int predictMode;
 	char outPutPath[MAX_PATH_LENGHT];
 };

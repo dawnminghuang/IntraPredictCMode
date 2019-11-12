@@ -4,6 +4,7 @@ OutputWriter::OutputWriter() {
 	modeInfoFp = NULL;
 	distanceInfoFp = NULL;
 	outAllFp = NULL;
+	dstDataFp = NULL;
 }
 
 OutputWriter::~OutputWriter() {
@@ -30,7 +31,7 @@ int  OutputWriter::initOutputAllWriter(char * path) {
 		outAllFp = NULL;
 	}
 	outAllFp = fopen(path, "w+");
-
+	return SUCCESS;
 }
 
 int  OutputWriter::initModeInfoFp(char * path, int predictMode) {
@@ -42,7 +43,7 @@ int  OutputWriter::initModeInfoFp(char * path, int predictMode) {
 	}
 	memset(outPutPath, 0, MAX_PATH_LENGHT);
 	char mode_path[MAX_MODE_PATH];
-	sprintf(mode_path, "\\mode_%d", predictMode);
+	sprintf(mode_path, "mode_%d.txt", predictMode);
 	strcpy(outPutPath, path);
 	strcat(outPutPath, mode_path);
 	if (modeInfoFp) {
@@ -50,7 +51,7 @@ int  OutputWriter::initModeInfoFp(char * path, int predictMode) {
 		modeInfoFp = NULL;
 	}
 	modeInfoFp = fopen(outPutPath, "w+");
-
+	return SUCCESS;
 }
 
 int  OutputWriter::initDistanceInfoFp(char * path, char* calc_mode) {
@@ -70,10 +71,28 @@ int  OutputWriter::initDistanceInfoFp(char * path, char* calc_mode) {
 		distanceInfoFp = NULL;
 	}
 	distanceInfoFp = fopen(outPutPath, "w+");
-
+	return SUCCESS;
 }
 
-
+int  OutputWriter::initDstDataFp(char * path, int predictMode) {
+	if (_access(path, 0) < 0) {
+		if (_mkdir(path) < 0) {
+			printf("mk fail errno = %d reason = %s \n", errno, strerror(errno));
+			return FAILURE;
+		}
+	}
+	memset(outPutPath, 0, MAX_PATH_LENGHT);
+	char mode_path[MAX_MODE_PATH];
+	sprintf(mode_path, "mode_%d.txt", predictMode);
+	strcpy(outPutPath, path);
+	strcat(outPutPath, mode_path);
+	if (dstDataFp) {
+		fclose(dstDataFp);
+		dstDataFp = NULL;
+	}
+	dstDataFp = fopen(outPutPath, "w+");
+	return SUCCESS;
+}
 
 void  OutputWriter::writeModeInfoToFile(char *data) {
 	if (modeInfoFp) {
@@ -110,6 +129,52 @@ void  OutputWriter::writeDistanceToFile(int *distanceData, int modeNumber) {
 	}
 }
 
+void OutputWriter::writeDstDataToFile(int **dstData, int tu_width, int tu_height) {
+	if (dstData) {
+		for (int j = 0; j < tu_height; j++) {
+			for (int i = 0; i < tu_width; i++) {
+				if (dstDataFp) {
+					fprintf(dstDataFp, "%4d", dstData[j][i]);
+					if (i == (tu_width - 1)) {
+						fprintf(dstDataFp, "\n");
+					}
+				}
+
+			}
+		}
+	}
+}
+
+void OutputWriter::writeDstDataToFile(int *dstData, int tu_width, int tu_height,int dstStride) {
+	if (dstData) {
+		for (int j = 0; j < tu_height; j++) {
+			for (int i = 0; i < tu_width; i++) {
+				if (dstDataFp) {
+					fprintf(dstDataFp, "%4d", dstData[i]);
+					if (i == (tu_width - 1)) {
+						fprintf(dstDataFp, "\n");
+					}
+				}
+			}
+			dstData += dstStride;
+		}
+	}
+}
+void OutputWriter::writeDstDataToFile(uint8_t *dstData, int tu_width, int tu_height, int dstStride) {
+	if (dstData) {
+		for (int j = 0; j < tu_height; j++) {
+			for (int i = 0; i < tu_width; i++) {
+				if (dstDataFp) {
+					fprintf(dstDataFp, "%4d", dstData[i]);
+					if (i == (tu_width - 1)) {
+						fprintf(dstDataFp, "\n");
+					}
+				}
+			}
+			dstData += dstStride;
+		}
+	}
+}
 
 
 

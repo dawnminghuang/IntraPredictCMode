@@ -1,15 +1,18 @@
-#ifndef __HEVCPREDICTER__
-#define __HEVCPREDICTER__
-#include "IntraPredicter.h"
-#include "common/DistanceCalculator.h"
+#ifndef __HEVCPREDICTERCMODE__
+#define __HEVCPREDICTERCMODE__
 #include "common/HevcCommon.h"
-
-class HevcPredicter :public IntraPredicter
+#include "IntraPredicter.h"
+typedef       int                 Int;
+typedef       bool                Bool;
+typedef       int               Short;
+typedef       Short           Pel;               ///< pixel type
+class HevcPredicterCMode :public IntraPredicter
 {
 
 public:
-	HevcPredicter();
-	~HevcPredicter();
+	HevcPredicterCMode();
+	~HevcPredicterCMode();
+
 	void predict();
 	void initDstData();
 	void deinitDstData();
@@ -27,7 +30,8 @@ public:
 	int inv_angle;
 	int max_dst_number;
 	int dst_stride_True;
-	int *hevc_dst;
+	Pel *hevc_dst;
 };
 
 #endif
+

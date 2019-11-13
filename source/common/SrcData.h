@@ -14,9 +14,15 @@
 #define NUM_EXTEND_SIZE_H264 2
 #define MAX_CU_SIZE_VP9 32
 #define NUM_EXTEND_SIZE_VP9 2
+#define MAX_PIXEL 255
+typedef enum {
+	MODE_RANDOM = 0,
+	MODE_NORMAL = 1,
+} GenerateModes;
+
 class SrcData {
 public:
-	SrcData();
+	SrcData(int generate_mode);
 	~SrcData();
 	void initSrcData(char *value);
 	void initAvs2SrcData();
@@ -36,5 +42,7 @@ public:
 
 	uint8_t  *vp9_src;
 	int  vp9_src_number;
+
+	int generate_mode;
 };
 #endif

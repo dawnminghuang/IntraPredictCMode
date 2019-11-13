@@ -1,9 +1,11 @@
 #include"SrcData.h"
 
-SrcData::SrcData() {
+
+SrcData::SrcData(int mode) {
 	avs2_max_cu_size = MAX_CU_SIZE_AVS2;
 	avs2_src = NULL;
 	avs2_max_src_number = MAX_CU_SIZE_AVS2 * EXTENT_SIZE_AVS2 + 1;
+
 
 	hevc_src = NULL;
 	hevc_src_number = MAX_CU_SIZE_HEVC * MAX_CU_SIZE_HEVC * NUM_EXTEND_SIZE_HEVC;
@@ -14,6 +16,8 @@ SrcData::SrcData() {
 
 	vp9_src = NULL;
 	vp9_src_number = (MAX_CU_SIZE_VP9 * NUM_EXTEND_SIZE_VP9 + 1) * (MAX_CU_SIZE_VP9 + 1);
+
+	generate_mode = mode;
 }
 
 void SrcData::initSrcData(char *value) {
@@ -35,8 +39,17 @@ void SrcData::initSrcData(char *value) {
 void SrcData::initAvs2SrcData() {
 	srand((unsigned)time(NULL));
 	avs2_src = new int[avs2_max_src_number]();
+	int pixel = 0;
 	for (int i = 0; i < avs2_max_src_number; i++) {
-		avs2_src[i] = (rand() % (1 << 8));
+		if(generate_mode == MODE_RANDOM){
+		    avs2_src[i] = (rand() % (1 << 8));
+		}else {
+			avs2_src[i] = pixel;
+			pixel++;
+			if (pixel > MAX_PIXEL) {
+				pixel = 0;
+			}
+		}
 	}
 }
 
@@ -44,24 +57,53 @@ void SrcData::initAvs2SrcData() {
 void SrcData::initHevcSrcData() {
 	srand((unsigned)time(NULL));
 	hevc_src = new int[hevc_src_number]();
+	int pixel = 0;
 	for (int i = 0; i < hevc_src_number; i++) {
-		hevc_src[i] = (rand() % (1 << 8));
+		if (generate_mode == MODE_RANDOM) {
+			hevc_src[i] = (rand() % (1 << 8));
+		} else {
+			hevc_src[i] = pixel;
+			pixel++;
+			if (pixel > MAX_PIXEL) {
+				pixel = 0;
+			}
+		}
 	}
 }
 
 void SrcData::initH264SrcData() {
 	srand((unsigned)time(NULL));
 	h264_src = new int[h264_src_number]();
+	int pixel = 0;
 	for (int i = 0; i < h264_src_number; i++) {
-		h264_src[i] = (rand() % (1 << 8));
+		if (generate_mode == MODE_RANDOM) {
+			h264_src[i] = (rand() % (1 << 8));
+		}
+		else {
+			h264_src[i] = pixel;
+			pixel++;
+			if (pixel > MAX_PIXEL) {
+				pixel = 0;
+			}
+		}
 	}
 }
 
 void SrcData::initVp9SrcData() {
 	srand((unsigned)time(NULL));
 	vp9_src = new uint8_t[vp9_src_number]();
+	int pixel = 0;
 	for (int i = 0; i < vp9_src_number; i++) {
-		vp9_src[i] = (rand() % (1 << 8));
+		if (generate_mode == MODE_RANDOM) {
+			vp9_src[i] = (rand() % (1 << 8));
+		}
+		else {
+			vp9_src[i] = pixel;
+			pixel++;
+			if (pixel > MAX_PIXEL) {
+				pixel = 0;
+			}
+		}
 	}
 }
 

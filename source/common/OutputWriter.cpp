@@ -142,6 +142,9 @@ void OutputWriter::writeDstDataToFile(int **dstData, int tu_width, int tu_height
 
 			}
 		}
+		if (dstDataFp){
+		    fprintf(dstDataFp, "\n");
+		}
 	}
 }
 

@@ -13,13 +13,14 @@
 #include "Vp9PredicterCMode.h"
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
-#define TEST_PROTOCOL "vp9"
+#define TEST_PROTOCOL "h264"
+#define TEST_MODE   1  
 IntraPredicter* GetIntraPredicter(char *protocol);
 IntraPredicter* GetIntraPredicterCMode(char *protocol);
 
 int main(int argc, char* argv[]) {
 	int returnCode = EXIT_SUCCESS;
-	SrcData *srcData = new SrcData();
+	SrcData *srcData = new SrcData(TEST_MODE);
 	srcData->initSrcData(TEST_PROTOCOL);
 	IntraPredicter* intraPredicter = GetIntraPredicter(TEST_PROTOCOL);
 	intraPredicter->setPredictSrcData(srcData);

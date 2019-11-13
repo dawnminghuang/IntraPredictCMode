@@ -21,24 +21,38 @@ ADD_DEFINITIONS(-DCMAKE_BUILD_TYPE=RELEASE)
 #SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
 
 SET(DIR_SRCS
-common/dirent.h
-common/OutputWriter.h
-common/DistanceData.h
-common/DistanceCalculator.h
-IntraPredicter.h
-Avs2Predicter.h
-H264Predicter.h
-HevcPredicter.h
-Vp9Predicter.h
-common/OutputWriter.cpp
-common/DistanceData.cpp
-common/DistanceCalculator.cpp
-IntraPredicter.cpp
-Avs2Predicter.cpp
-H264Predicter.cpp
-HevcPredicter.cpp
-Vp9Predicter.cpp
-main.cpp
+	common/dirent.h
+	common/OutputWriter.h
+	common/DistanceData.h
+	common/DistanceCalculator.h
+	common/SrcData.h
+	common/Avs2Common.h
+	common/HevcCommon.h
+	common/H264Common.h
+	common/Vp9Common.h
+	IntraPredicter.h
+	Avs2Predicter.h
+	Avs2PredicterCMode.h
+	H264Predicter.h
+	H264PredicterCMode.h
+	HevcPredicter.h
+	HevcPredicterCMode.h
+	Vp9Predicter.h
+	Vp9PredicterCMode.h
+	common/OutputWriter.cpp
+	common/DistanceData.cpp
+	common/DistanceCalculator.cpp
+	common/SrcData.cpp
+	IntraPredicter.cpp
+	Avs2Predicter.cpp
+	Avs2PredicterCMode.cpp
+	H264Predicter.cpp
+	H264PredicterCMode.cpp
+	HevcPredicter.cpp
+	HevcPredicterCMode.cpp
+	Vp9Predicter.cpp
+	Vp9PredicterCMode.cpp
+	main.cpp
 )
 
 ADD_EXECUTABLE(IntraPredict ${DIR_SRCS})

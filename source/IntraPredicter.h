@@ -16,16 +16,20 @@ public:
 public:
 	virtual void predict();
 	virtual void setPredictSrcData(SrcData *srcData);
+	void setPredictMode(int mode);
 	void generateOutPath(char * protocolPath, int calcMode);
+	void generateDigOutPath(char * protocolPath, int calcMode);
 	virtual void saveDistanceMatri(DistanceData* distanMatri, int uriMode, int width, int height, int i, int j, int  iYnN1, int iY, int iYn, int iYnP2);
 	virtual void convertXPoints(int* iYnN1, int* iY, int* iYn, int* iYnP2);
 	void writeMaxDistanceToFile(int calcMode);
 	void writePostionToFile(DistanceData* distanMatri);
+	void writeDiagPostionToFile();
 public:
 	DistanceCalculator *distanceCalculator;
 	OutputWriter*   outPutWriter;
 	SrcData *src_data;
 	char outPath[MAX_PATH_LENGHT];
+	char digOutPath[MAX_PATH_LENGHT];
 	char protocolOutPath[MAX_PATH_LENGHT];
 	int calc_mode;
 };

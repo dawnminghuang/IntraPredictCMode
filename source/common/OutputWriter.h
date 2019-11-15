@@ -12,7 +12,7 @@
 #include "dirent.h"
 
 #define MAX_PATH_LENGHT 4096
-#define MAX_MODE_PATH 16
+#define MAX_MODE_PATH 256
 
 #define SUCCESS 0
 #define FAILURE 1
@@ -26,8 +26,11 @@ public:
 	int initDistanceInfoFp(char * path, char*  calc_mode);
 	int initOutputAllWriter(char * path);
 	int initDstDataFp(char * path, int predictMode);
+	int initDigPostionInfoFp(char * path, int predictMode);
 	void writeModeInfoToFile(char *data);
 	void writeModeInfoToFile(DistanceData *distancedata);
+	void writeModeInfoToFile(int **calc_matri, int calc_pixel_number, int distance_size, int y_ratio);
+	void writeModeInfoToFile(int **calc_matri, int * calc_matri_dig, int calc_pixel_number, int distance_size, int y_ratio);
 	void writeDistanceToFile(int *distanceData, int modeNumber);
 	void writeDstDataToFile(int **dstData, int width, int height);
 	void writeDstDataToFile(int *dstData, int width, int tu_height, int dstStride);
@@ -35,6 +38,7 @@ public:
 public:
 	FILE *modeInfoFp;
 	FILE *distanceInfoFp;
+	FILE *digPostionInfoFp;
 	FILE *outAllFp;
 	FILE *dstDataFp;
 	int predictMode;

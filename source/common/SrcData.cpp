@@ -6,9 +6,9 @@ SrcData::SrcData(int mode) {
 	avs2_src = NULL;
 	avs2_max_src_number = MAX_CU_SIZE_AVS2 * EXTENT_SIZE_AVS2 + 1;
 
-
+	// (2*width + 2)*(2*height)
 	hevc_src = NULL;
-	hevc_src_number = MAX_CU_SIZE_HEVC * MAX_CU_SIZE_HEVC * NUM_EXTEND_SIZE_HEVC;
+	hevc_src_number = (MAX_CU_SIZE_HEVC * SRC_EXTEND_SIZE_HEVC) *(MAX_CU_SIZE_HEVC * SRC_EXTEND_SIZE_HEVC + SRC_EXTEND_SIZE_HEVC);
 
 
 	h264_src = NULL;
@@ -110,18 +110,22 @@ void SrcData::initVp9SrcData() {
 SrcData::~SrcData() {
 	if (avs2_src) {
 		delete[] avs2_src;
+		avs2_src = NULL;
 	}
 
 	if (hevc_src) {
 		delete[] hevc_src;
+		hevc_src = NULL;
 	}
 
 	if (h264_src) {
 		delete[] h264_src;
+		h264_src = NULL;
 	}
 
 	if (vp9_src) {
 		delete[] vp9_src;
+		vp9_src = NULL;
 	}
 }
 

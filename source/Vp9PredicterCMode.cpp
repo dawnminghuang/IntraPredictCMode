@@ -15,11 +15,9 @@ void Vp9PredicterCMode::predict() {
 	int mode_number = NUM_INTRA_PMODE_VP9 + START_INDEX_VP9;
 	int max_cu_size = 64;
 	generateOutPath(VP9_PATH, calc_mode);
-	outPutWriter->initDistanceInfoFp(outPath, "Matri");
 	distanceCalculator->initDistanceCalculator(mode_number, max_cu_size, calc_mode);
 	for (int i = 0; i < NUM_INTRA_PMODE_VP9; i++) {
 		int uiDirMode = g_prdict_mode_vp9[i];
-		outPutWriter->initModeInfoFp(outPath, uiDirMode);
 		outPutWriter->initDstDataFp(VP9_DATA_PATH_CMODE, uiDirMode);
 		distanceCalculator->setPredictMode(uiDirMode);
 		for (int j = 0; j < NUM_CU_SIZE_VP9; j++) {
@@ -226,6 +224,7 @@ void Vp9PredicterCMode::initDstData() {
 void Vp9PredicterCMode::deinitDstData() {
 	if (vp9_dst) {
 		delete[] vp9_dst;
+		vp9_dst = NULL;
 	}
 }
 

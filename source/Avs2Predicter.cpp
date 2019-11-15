@@ -15,11 +15,13 @@ void AVS2Predicter::predict() {
 	int mode_number = NUM_INTRA_PMODE_AVS;
 	int max_cu_size = 64;
 	generateOutPath(AVS2_PATH, calc_mode);
+	generateDigOutPath(AVS2_PATH, calc_mode);
 	distanceCalculator->initDistanceCalculator(mode_number, max_cu_size, calc_mode);
 	for (int i = 0; i < NUM_MODE_INTRA_AVS; i++) {
 		int uiDirMode = g_prdict_mode_avs[i];
-		outPutWriter->initModeInfoFp(outPath, uiDirMode);
-		outPutWriter->initDstDataFp(AVS2_DATA_PATH, uiDirMode);
+		outPutWriter->initModeInfoFp(outPath, uiDirMode);// position info
+		outPutWriter->initDstDataFp(AVS2_DATA_PATH, uiDirMode);// predict pixel
+		outPutWriter->initDigPostionInfoFp(digOutPath, uiDirMode);//is in diag info
 		distanceCalculator->setPredictMode(uiDirMode);
 		for (int j = 0; j < NUM_CU_PMODE_AVS; j++) {
 			tu_width = g_cu_size_avs[j][0];
@@ -27,6 +29,7 @@ void AVS2Predicter::predict() {
 			initDstData();
 			DistanceData* distanMatri = new DistanceData(tu_width, tu_height, NUM_DISTANCE_SIZE_AVS);
 			predIntraAngAdi(distanMatri, uiDirMode);
+			outPutWriter->writeModeInfoToFile(distanMatri);
 			outPutWriter->writeDstDataToFile(avs_dst, tu_width, tu_height);
 			distanceCalculator->calcuDistance(distanMatri);
 			deinitDstData();
@@ -55,6 +58,7 @@ void AVS2Predicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 	iDy = g_aucDirDy[uiDirMode];
 	uixyflag = g_aucXYflg[uiDirMode];
 	iDxy = g_aucSign[uiDirMode];
+
 
 	for (j = 0; j < iHeight; j++) {
 		for (i = 0; i < iWidth; i++) {
@@ -144,6 +148,7 @@ void AVS2Predicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 					avs_dst[j][i] = (rpSrc[-iYnN1] * (32 - offset) + rpSrc[-iY] * (64 - offset) +
 						rpSrc[-iYn] * (32 + offset) + rpSrc[-iYnP2] * offset + 64) >> 7;
 				}
+
 				saveDistanceMatri(distanMatri, i, j, iYnN1, iY, iYn, iYnP2, -1);
 			}
 		}
@@ -166,11 +171,15 @@ int AVS2Predicter::getContextPixel(int uiDirMode, int uiXYflag, int iTempD, int 
 void AVS2Predicter::saveDistanceMatri(DistanceData* distanMatri, int i, int j, int  iYnN1, int iY, int iYn, int iYnP2, int iX)
 {
 	if (iX == -1) {
-		iYnN1 = -iYnN1;
-		iY = -iY;
-		iYn = -iYn;
-		iYnP2 = -iYnP2;
-
+		iYnN1 = -iYnN1-1;
+		iY = -iY-1;
+		iYn = -iYn-1;
+		iYnP2 = -iYnP2-1;
+     }else {
+		iYnN1 = iYnN1 + 1;
+		iY = iY + 1;
+		iYn = iYn + 1;
+		iYnP2 = iYnP2 + 1;
 	}
 	distanMatri->distance_matri[j][i][0] = iYnN1;
 	distanMatri->distance_matri[j][i][1] = iY;
@@ -191,5 +200,6 @@ void AVS2Predicter::deinitDstData() {
 			delete[] avs_dst[i];
 		}
 		delete[] avs_dst;
+		avs_dst = NULL;
 	}
 }

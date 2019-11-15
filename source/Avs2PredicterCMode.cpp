@@ -18,7 +18,6 @@ void AVS2PredicterCMode::predict() {
 	generateOutPath(AVS2_PATH, calc_mode);
 	for (int i = 0; i < NUM_MODE_INTRA_AVS; i++) {
 		int uiDirMode = g_prdict_mode_avs[i];
-		outPutWriter->initModeInfoFp(outPath, uiDirMode);
 		outPutWriter->initDstDataFp(AVS2_DATA_PATH_CMODE, uiDirMode);
 		for (int j = 0; j < NUM_CU_PMODE_AVS; j++) {
 			tu_width = g_cu_size_avs[j][0];
@@ -293,5 +292,6 @@ void AVS2PredicterCMode::deinitDstData() {
 			delete[] avs_dst[i];
 		}
 		delete[] avs_dst;
+		avs_dst = NULL;
 	}
 }

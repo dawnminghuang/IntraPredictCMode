@@ -12,6 +12,7 @@ public:
 	~H264Predicter();
 	void predict();
 	void predIntraAngAdi(DistanceData* distanMatri, int uiDirMode);
+	void convertAbovePoints(int* iYnN1, int* iY, int* iYn, int* iYnP2);
 	void convertSrc(int* above, int *left);
 	void initDstData();
 	void deinitDstData();

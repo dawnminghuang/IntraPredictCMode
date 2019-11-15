@@ -5,6 +5,7 @@ OutputWriter::OutputWriter() {
 	distanceInfoFp = NULL;
 	outAllFp = NULL;
 	dstDataFp = NULL;
+	digPostionInfoFp = NULL;
 }
 
 OutputWriter::~OutputWriter() {
@@ -17,6 +18,10 @@ OutputWriter::~OutputWriter() {
 	if (distanceInfoFp) {
 		fclose(distanceInfoFp);
 		distanceInfoFp = NULL;
+	}
+	if (digPostionInfoFp) {
+		fclose(digPostionInfoFp);
+		digPostionInfoFp = NULL;
 	}
 }
 
@@ -54,6 +59,26 @@ int  OutputWriter::initModeInfoFp(char * path, int predictMode) {
 	return SUCCESS;
 }
 
+int  OutputWriter::initDigPostionInfoFp(char * path, int predictMod) {
+	if (_access(path, 0) < 0) {
+		if (_mkdir(path) < 0) {
+			printf("mk fail errno = %d reason = %s \n", errno, strerror(errno));
+			return FAILURE;
+		}
+	}
+	memset(outPutPath, 0, MAX_PATH_LENGHT);
+	char mode_path[MAX_MODE_PATH];
+	sprintf(mode_path, "%d.txt", predictMod);
+	strcpy(outPutPath, path);
+	strcat(outPutPath, mode_path);
+	if (digPostionInfoFp) {
+		fclose(digPostionInfoFp);
+		digPostionInfoFp = NULL;
+	}
+	digPostionInfoFp = fopen(outPutPath, "w+");
+	return SUCCESS;
+}
+
 int  OutputWriter::initDistanceInfoFp(char * path, char* calc_mode) {
 	if (_access(path, 0) < 0) {
 		if (_mkdir(path) < 0) {
@@ -73,6 +98,8 @@ int  OutputWriter::initDistanceInfoFp(char * path, char* calc_mode) {
 	distanceInfoFp = fopen(outPutPath, "w+");
 	return SUCCESS;
 }
+
+
 
 int  OutputWriter::initDstDataFp(char * path, int predictMode) {
 	if (_access(path, 0) < 0) {
@@ -107,16 +134,65 @@ void  OutputWriter::writeModeInfoToFile(DistanceData *distanceData) {
 			for (int i = 0; i < distanceData->tu_width; i++) {
 				if (modeInfoFp) {
 					fprintf(modeInfoFp, "%4d", distanceData->distance_matri[j][i][1]);
+					fflush(modeInfoFp);
 					if (i == (distanceData->tu_width - 1)) {
 						fprintf(modeInfoFp, "\n");
+						fflush(modeInfoFp);
 					}
 				}
 
 			}
 		}
+		fprintf(modeInfoFp, "\n");
+		fflush(modeInfoFp);
 	}
 }
 
+void  OutputWriter::writeModeInfoToFile(int **calc_matri, int * calc_matri_dig, int calc_pixel_number, int distance_size, int y_ratio) {
+	if (calc_matri && digPostionInfoFp) {
+		for (int j = 0; j < calc_pixel_number; j++) {
+			fprintf(digPostionInfoFp, "[");
+			fflush(digPostionInfoFp);
+			if(calc_matri_dig[j]){
+				for (int i = 0; i < distance_size; i++) {
+					fprintf(digPostionInfoFp, "%2d ", calc_matri[j][i]);
+					fflush(digPostionInfoFp);
+				}
+			}else {
+				fprintf(digPostionInfoFp, "            ");
+				fflush(digPostionInfoFp);
+			}
+			fprintf(digPostionInfoFp, "]");
+			fflush(digPostionInfoFp);
+			if ((j%y_ratio) == (y_ratio - 1)) {
+				fprintf(digPostionInfoFp, "\n");
+				fflush(digPostionInfoFp);
+			}
+		}
+		fprintf(digPostionInfoFp, "\n");
+		fflush(digPostionInfoFp);
+	}
+}
+void  OutputWriter::writeModeInfoToFile(int **calc_matri, int calc_pixel_number, int distance_size, int y_ratio) {
+	if (calc_matri && digPostionInfoFp) {
+		for (int j = 0; j < calc_pixel_number; j++) {
+			fprintf(digPostionInfoFp, "[");
+			fflush(digPostionInfoFp);
+			for (int i = 0; i < distance_size; i++) {
+			    fprintf(digPostionInfoFp, "%2d ", calc_matri[j][i]);
+				fflush(digPostionInfoFp);
+			}
+			fprintf(digPostionInfoFp, "]");
+			fflush(digPostionInfoFp);
+			if ((j%y_ratio) == (y_ratio - 1)) {
+				fprintf(digPostionInfoFp, "\n");
+				fflush(digPostionInfoFp);
+			}
+		}
+		fprintf(digPostionInfoFp, "\n");
+		fflush(digPostionInfoFp);
+	}
+}
 void  OutputWriter::writeDistanceToFile(int *distanceData, int modeNumber) {
 	if (distanceData) {
 		for (int j = 0; j < modeNumber; j++) {

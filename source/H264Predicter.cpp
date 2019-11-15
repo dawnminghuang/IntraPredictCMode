@@ -17,12 +17,13 @@ void H264Predicter::predict() {
 	int mode_max_index = NUM_INTRA_PMODE_264 + START_INDEX_264;
 	int max_cu_size = 64;
 	generateOutPath(H264_PATH, calc_mode);
-	outPutWriter->initDistanceInfoFp(outPath, "Matri");
+	generateDigOutPath(H264_PATH, calc_mode);
 	distanceCalculator->initDistanceCalculator(mode_max_index, max_cu_size, calc_mode);
 	for (int i = 0; i < NUM_INTRA_PMODE_264; i++) {
 		int uiDirMode = g_prdict_mode_264[i];
 		outPutWriter->initModeInfoFp(outPath, uiDirMode);
 		outPutWriter->initDstDataFp(H264_DATA_PATH, uiDirMode);
+		outPutWriter->initDigPostionInfoFp(digOutPath, uiDirMode);
 		distanceCalculator->setPredictMode(uiDirMode);
 		for (int j = 0; j < NUM_CU_SIZE_264; j++) {
 			int iWidth = g_cu_size_264[j][0];
@@ -33,6 +34,7 @@ void H264Predicter::predict() {
 			DistanceData* distanMatri = new DistanceData(iWidth, iHeight, NUM_DISTANCE_SIZE_264);
 			predIntraAngAdi(distanMatri, uiDirMode);
 			distanceCalculator->calcuDistance(distanMatri);
+			outPutWriter->writeModeInfoToFile(distanMatri);
 			outPutWriter->writeDstDataToFile(h264_dst, iWidth, iHeight);
 			deinitDstData();
 			delete distanMatri;
@@ -449,7 +451,22 @@ void H264Predicter::convertSrc(int* above, int *left) {
 	}
 }
 
+void H264Predicter::convertAbovePoints(int* iYnN1, int* iY, int* iYn, int* iYnP2)
+{
+	if(*iYnN1 !=-1 ){
+		*iYnN1 = -*iYnN1 - 2;
+	}
+	if(*iY != -1){
+		*iY = -*iY - 2;
+	}
+	if(*iYn != -1){
+	   *iYn = -*iYn - 2;
+	}
+	if(*iYnP2 != -1){
+	    *iYnP2 = -*iYnP2 - 2;
+	}
 
+}
 void H264Predicter::initDstData() {
 	h264_dst = new int *[tu_height];
 	for (int i = 0; i < tu_height; i++) {
@@ -463,6 +480,7 @@ void H264Predicter::deinitDstData() {
 			delete [] h264_dst[i];
 		}
 		delete[] h264_dst;
+		h264_dst = NULL;
 	}
 }
 

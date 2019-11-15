@@ -22,6 +22,7 @@ ADD_DEFINITIONS(-DCMAKE_BUILD_TYPE=RELEASE)
 
 SET(DIR_SRCS
 	common/dirent.h
+    common/Log.h
 	common/OutputWriter.h
 	common/DistanceData.h
 	common/DistanceCalculator.h
@@ -39,6 +40,7 @@ SET(DIR_SRCS
 	HevcPredicterCMode.h
 	Vp9Predicter.h
 	Vp9PredicterCMode.h
+	common/Log.cpp
 	common/OutputWriter.cpp
 	common/DistanceData.cpp
 	common/DistanceCalculator.cpp

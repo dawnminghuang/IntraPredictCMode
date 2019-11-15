@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 #include "common/SrcData.h"
+#include "common/Log.h"
 #include "IntraPredicter.h"
 #include "Avs2Predicter.h"
 #include "Avs2PredicterCMode.h"
@@ -13,24 +14,51 @@
 #include "Vp9PredicterCMode.h"
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
-#define TEST_PROTOCOL "h264"
-#define TEST_MODE   1  
+#define TEST_PROTOCOL "avs2"
+#define TEST_CALC_METHOD 1
+#define SRC_GENERATE_MODE   0  
+#define PROTOCOL_NUMBER 4
+#define CALC_NUMBER 5
+#define PROCESS_ALL 
+char protocolName[PROTOCOL_NUMBER][MAX_PATH_LENGHT] = { "avs2", "hevc","h264" ,"vp9"};
+int calcMethod[CALC_NUMBER] = { CALCU_MODE_ROW ,CALCU_MODE_COL , CALCU_MODE_MATRI,CALCU_MODE_MATRI_4X2 ,CALCU_MODE_MATRI_2X4 };
 IntraPredicter* GetIntraPredicter(char *protocol);
 IntraPredicter* GetIntraPredicterCMode(char *protocol);
+void singlePredictProcedure(char *protocol, int calcMethod);
 
 int main(int argc, char* argv[]) {
 	int returnCode = EXIT_SUCCESS;
-	SrcData *srcData = new SrcData(TEST_MODE);
-	srcData->initSrcData(TEST_PROTOCOL);
-	IntraPredicter* intraPredicter = GetIntraPredicter(TEST_PROTOCOL);
+#ifdef PROCESS_ALL
+	for (int i = 0; i < PROTOCOL_NUMBER; i++) {
+		for (int j = 0; j < CALC_NUMBER; j++) {
+			printf("%s  protocol:%s, method:%d, processing......\n", logTime(), protocolName[i], calcMethod[j]);
+			singlePredictProcedure(protocolName[i], calcMethod[j]);
+		}
+	
+	}
+#else
+	singlePredictProcedure(TEST_PROTOCOL, TEST_CALC_METHOD);
+#endif
+
+
+}
+
+
+void singlePredictProcedure(char *protocol, int calcMethod) {
+	SrcData *srcData = new SrcData(SRC_GENERATE_MODE);
+	srcData->initSrcData(protocol);
+	IntraPredicter* intraPredicter = GetIntraPredicter(protocol);
+	intraPredicter->setPredictMode(calcMethod);
 	intraPredicter->setPredictSrcData(srcData);
 	intraPredicter->predict();
-	IntraPredicter* intraPredicterCMode = GetIntraPredicterCMode(TEST_PROTOCOL);
+	IntraPredicter* intraPredicterCMode = GetIntraPredicterCMode(protocol);
 	intraPredicterCMode->setPredictSrcData(srcData);
 	intraPredicterCMode->predict();
-	delete srcData;
 	delete intraPredicter;
+	delete intraPredicterCMode;
+	delete srcData;
 }
+
 IntraPredicter* GetIntraPredicter(char *value) {
 	if (strcmp(value, "avs2") == 0) {
 		return new AVS2Predicter();

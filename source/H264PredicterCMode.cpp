@@ -647,6 +647,7 @@ void H264PredicterCMode::deinitDstData() {
 			delete[] h264_dst[i];
 		}
 		delete[] h264_dst;
+		h264_dst = NULL;
 	}
 }
 

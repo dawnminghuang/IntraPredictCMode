@@ -192,7 +192,6 @@ int HevcPredicterCMode::computeIntraPredAngle(int uiDirMode) {
 	else {
 		sign_ang = 1;
 	}
-	printf("CMode uiDirMode:%d, is_mod_ver:%d \n", uiDirMode, is_mod_ver);
 	abs_ang = g_ang_table[abs_ang_mode];
 	inv_angle = g_inv_ang_table[abs_ang_mode];
 	intra_pred_angle = sign_ang * abs_ang;
@@ -215,5 +214,6 @@ void HevcPredicterCMode::initDstData() {
 void HevcPredicterCMode::deinitDstData() {
 	if (hevc_dst) {
 		delete[] hevc_dst;
+		hevc_dst = NULL;
 	}
 }

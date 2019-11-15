@@ -15,12 +15,13 @@ void HevcPredicter::predict() {
 	int mode_number = NUM_INTRA_PMODE_HEVC + START_INDEX_HEVC;
 	int max_cu_size = 64;
 	generateOutPath(HEVC_PATH, calc_mode);
-	outPutWriter->initDistanceInfoFp(outPath, "Matri");
+	generateDigOutPath(HEVC_PATH, calc_mode);
 	distanceCalculator->initDistanceCalculator(mode_number, max_cu_size, calc_mode);
 	for (int i = 0; i < NUM_INTRA_PMODE_HEVC; i++) {
 		int uiDirMode = g_prdict_mode_hevc[i];
 		outPutWriter->initModeInfoFp(outPath, uiDirMode);
 		outPutWriter->initDstDataFp(HEVC_DATA_PATH, uiDirMode);
+		outPutWriter->initDigPostionInfoFp(digOutPath, uiDirMode);
 		distanceCalculator->setPredictMode(uiDirMode);
 		computeIntraPredAngle(uiDirMode);
 		for (int j = 0; j < NUM_CU_SIZE_HEVC; j++) {
@@ -30,8 +31,8 @@ void HevcPredicter::predict() {
 			DistanceData* distanMatri = new DistanceData(iWidth, iHeight, NUM_DISTANCE_SIZE_HEVC);
 			predIntraAngAdi(distanMatri, uiDirMode);
 			distanceCalculator->calcuDistance(distanMatri);
+			outPutWriter->writeModeInfoToFile(distanMatri);
 			outPutWriter->writeDstDataToFile(hevc_dst, iWidth, iHeight, dst_stride_True);
-			writePostionToFile(distanMatri);
 			deinitDstData();
 			delete distanMatri;
 		}
@@ -146,7 +147,6 @@ void HevcPredicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 				delta_pos = delta_pos + intra_pred_angle;
 				delta_int = delta_pos >> 5;
 				delta_fract = delta_pos & (32 - 1);
-		
 				if (delta_fract) {
 					for (int j = 0; j < iHeight; j++) {
 						int ref_main_index = delta_int + j + 1;
@@ -206,5 +206,6 @@ void HevcPredicter::initDstData() {
 void HevcPredicter::deinitDstData() {
 	if (hevc_dst) {
 		delete[] hevc_dst;
+		hevc_dst = NULL;
 	}
 }

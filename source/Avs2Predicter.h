@@ -22,8 +22,6 @@ public:
 
 public:
 	int **avs_dst;
-	int tu_width;
-	int tu_height;
 
 };
 

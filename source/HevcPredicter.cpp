@@ -205,7 +205,7 @@ void HevcPredicter::initDstData() {
 
 void HevcPredicter::deinitDstData() {
 	if (hevc_dst) {
-		delete[] hevc_dst;
+		delete [] hevc_dst;
 		hevc_dst = NULL;
 	}
 }

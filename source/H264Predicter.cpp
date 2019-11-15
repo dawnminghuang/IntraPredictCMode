@@ -467,6 +467,7 @@ void H264Predicter::convertAbovePoints(int* iYnN1, int* iY, int* iYn, int* iYnP2
 	}
 
 }
+
 void H264Predicter::initDstData() {
 	h264_dst = new int *[tu_height];
 	for (int i = 0; i < tu_height; i++) {

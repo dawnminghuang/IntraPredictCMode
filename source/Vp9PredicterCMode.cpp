@@ -215,6 +215,10 @@ void Vp9PredicterCMode::convertSrc(uint8_t* above, uint8_t *left) {
 	}
 }
 
+void Vp9PredicterCMode::setStride(int dstStride) {
+	stride = dstStride;
+	bs = dstStride;
+}
 
 void Vp9PredicterCMode::initDstData() {
 	int dstOutNumber = tu_height * tu_height;

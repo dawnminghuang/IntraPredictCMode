@@ -12,3 +12,27 @@ char*   logTime(void)
 	szTime[18] = 0;
 	return szTime;
 }
+char* get_cur_time()
+{
+	static char s[20];
+	time_t t;
+	struct tm* ltime;
+	time(&t);
+	ltime = localtime(&t);
+	strftime(s, 20, "%Y-%m-%d %H:%M:%S", ltime);
+	return s;
+}
+
+
+int log(const char *fmt ...)
+{
+	va_list args;
+	int n;
+	sprintf(sprint_buf, "time:%s ", logTime());
+	//Êä³öÄÚÈİ
+	va_start(args, fmt);
+	n = vsprintf(sprint_buf, fmt, args);
+	va_end(args);
+	return n;
+}
+

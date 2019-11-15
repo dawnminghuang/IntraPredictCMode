@@ -24,6 +24,10 @@ void IntraPredicter::setPredictMode(int mode){
 	calc_mode  = mode;
 }
 
+void IntraPredicter::setTuSize(int width, int height) {
+	tu_width = width;
+	tu_height = height;
+}
 void IntraPredicter::generateOutPath(char * protocolPath, int calcMode) {
 	if (_access(protocolPath, 0) < 0) {
 		if (_mkdir(protocolPath) < 0) {

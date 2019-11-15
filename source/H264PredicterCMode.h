@@ -97,6 +97,7 @@ public:
 	~H264PredicterCMode();
 	void predict();
 	void predIntraAngAdi(DistanceData* distanMatri, int uiDirMode);
+	void setBlockSize(int size);
 	void convertSrc(int* above, int *left);
 	void initDstData();
 	void deinitDstData();
@@ -114,8 +115,6 @@ public:
 	void intra8x8_hor_down_pred(int *refAbove, int *refLeft);
 public:
     int max_dst_number;
-	int tu_width;
-	int tu_height;
 	int block_size;
 	int **h264_dst;
 

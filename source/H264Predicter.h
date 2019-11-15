@@ -20,8 +20,6 @@ public:
 public:
 	int **h264_dst;
 	int max_dst_number;
-	int tu_width;
-	int tu_height;
 
 };
 

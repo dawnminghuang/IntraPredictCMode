@@ -23,10 +23,6 @@ void AVS2PredicterCMode::predict() {
 			tu_width = g_cu_size_avs[j][0];
 			tu_height = g_cu_size_avs[j][1];
 			initDstData();
-			pSrc = NULL;
-			if (src_data && src_data->avs2_src) {
-				pSrc = src_data->avs2_src + ((1 << CU_SIZ_LOG_AVS2) * 2);
-			}
 			xPredIntraAngAdi(pSrc, avs_dst, uiDirMode, tu_width, tu_height);
 			outPutWriter->writeDstDataToFile(avs_dst, tu_width, tu_height);
 			deinitDstData();
@@ -43,8 +39,11 @@ void AVS2PredicterCMode::xPredIntraAngAdi(int *pSrc, int **pDst, int uiDirMode, 
 	int iDxy;
 	int iWidth2 = iWidth << 1;
 	int iHeight2 = iHeight << 1;
-	int  *rpSrc = pSrc;
 
+	if (src_data && src_data->avs2_src) {
+		pSrc = src_data->avs2_src + ((1 << CU_SIZ_LOG_AVS2) * 2);
+	}
+	int  *rpSrc = pSrc;
 	iDx = g_aucDirDx[uiDirMode];
 	iDy = g_aucDirDy[uiDirMode];
 	uixyflag = g_aucXYflg[uiDirMode];
@@ -142,6 +141,10 @@ void AVS2PredicterCMode::xPredIntraAngAdi(int *pSrc, int **pDst, int uiDirMode, 
 
 void AVS2PredicterCMode::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 
+	int  *pSrc = NULL;
+	if (src_data && src_data->avs2_src) {
+		pSrc = src_data->avs2_src + ((1 << CU_SIZ_LOG_AVS2) * 2);
+	}
 	int  *rpSrc = pSrc;
 	int  iDx, iDy, i, j, iTempDx, iTempDy, iXx, iXy, iYx, iYy;
 	int  uixyflag = 0; // 0 for x axis 1 for y axis

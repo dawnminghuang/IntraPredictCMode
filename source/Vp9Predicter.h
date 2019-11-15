@@ -25,8 +25,6 @@ public:
 	int **vp9_dst;
 	int point_number;
 	int max_dst_number;
-	int tu_width;
-	int tu_height;
 };
 
 #endif

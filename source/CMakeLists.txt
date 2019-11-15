@@ -32,6 +32,7 @@ SET(DIR_SRCS
 	common/H264Common.h
 	common/Vp9Common.h
 	IntraPredicter.h
+    IntraPredicterCompare.h
 	Avs2Predicter.h
 	Avs2PredicterCMode.h
 	H264Predicter.h
@@ -46,6 +47,7 @@ SET(DIR_SRCS
 	common/DistanceCalculator.cpp
 	common/SrcData.cpp
 	IntraPredicter.cpp
+    IntraPredicterCompare.cpp
 	Avs2Predicter.cpp
 	Avs2PredicterCMode.cpp
 	H264Predicter.cpp

@@ -632,7 +632,9 @@ void H264PredicterCMode::convertSrc(int* above, int *left) {
 		}
 	}
 }
-
+void H264PredicterCMode::setBlockSize(int  size) {
+	block_size = size;
+}
 
 void H264PredicterCMode::initDstData() {
 	h264_dst = new int *[tu_height];

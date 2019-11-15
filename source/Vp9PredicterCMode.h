@@ -1,5 +1,5 @@
 #ifndef __VP9PREDICTERCMODE__
-#define __Vp9PREDICTERCMODE__
+#define __VP9PREDICTERCMODE__
 #include "IntraPredicter.h"
 #include "common/DistanceCalculator.h"
 #include "common/Vp9Common.h"
@@ -20,6 +20,7 @@ public:
 	void d153_predictor(uint8_t *above, uint8_t *left);
 	void d135_predictor(uint8_t *above, uint8_t *left);
 	void convertSrc(uint8_t* above, uint8_t *left);
+	void setStride(int dstStride);
 	void initDstData();
 	void deinitDstData();
 public:
@@ -27,8 +28,6 @@ public:
 	uint8_t *vp9_dst;
 	int point_number;
 	int max_dst_number;
-	int tu_width;
-	int tu_height;
 	int stride;
 };
 

@@ -73,6 +73,16 @@ const int g_aucDirDxDy[2][NUM_INTRA_PMODE_AVS][2] = {
 	}
 };
 
+const int g_prdict_mode_row[NUM_INTRA_PMODE_AVS] = {
+	0, 0, 0, 1, 1, 
+	1, 1, 1, 1, 1, 
+	1, 1, 0, 0, 0,
+	0, 0, 0, 1, 1, 
+	1, 1, 1, 1, 0, 
+	0, 0, 0, 0, 0,
+	0, 0, 0
+};
+
 const int g_prdict_mode_avs[NUM_INTRA_PMODE_AVS] = {
 	3, 4, 5, 6,
 	7, 8, 9, 10,
@@ -82,7 +92,6 @@ const int g_prdict_mode_avs[NUM_INTRA_PMODE_AVS] = {
 	25, 26, 27, 28,
 	29, 30, 31, 32
 };
-
 
 const int g_cu_size_avs[NUM_CU_PMODE_AVS][2] = {
 	// width/height

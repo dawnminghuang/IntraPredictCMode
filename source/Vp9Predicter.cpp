@@ -78,9 +78,10 @@ void Vp9Predicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 				if ((i == 0) && (j != iHeight - 1)) {
 					iXnN1 = j;
 					iX = j + 1;
-					iXn = j + 1;
-					iXnP2 = j + 1;
-					vp9_dst[j][i] = AVG2(refLeft[iXnN1], refLeft[iXn]);
+					iXn = j;
+					iXnP2 = j;
+					vp9_dst[j][i] = AVG2(refLeft[iXnN1], refLeft[iX]);
+					convertXPoints(&iXnN1, &iX, &iXn, &iXnP2);
 					saveVp9Matri(vp9_Matri, j*bs, iXnN1, iX, iXn, iXnP2, vp9_dst[j][i]);
 				}
 				else if ((i == 1) && (j != iHeight - 1) && (j != iHeight - 2)) {
@@ -89,14 +90,16 @@ void Vp9Predicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 					iXn = j + 2;
 					iXnP2 = j + 2;
 					vp9_dst[j][i] = AVG3(refLeft[iXnN1], refLeft[iX], refLeft[iXn]);
+					convertXPoints(&iXnN1, &iX, &iXn, &iXnP2);
 					saveVp9Matri(vp9_Matri, j*bs + 1, iXnN1, iX, iXn, iXnP2, vp9_dst[j][i]);
 				}
 				else if ((i == 1) && (j == iHeight - 2)) {
-					iXnN1 = bs - 1;
-					iX = bs - 2;
-					iXn = bs - 2;
-					iXnP2 = bs - 2;
-					vp9_dst[j][i] = (refLeft[iX] + refLeft[iXnN1] * 3 + 2) >> 2;
+					iXnN1 = bs - 2;
+					iX = bs - 1;
+					iXn = bs - 1;
+					iXnP2 = bs - 1;
+					vp9_dst[j][i] = (refLeft[iXnN1] + refLeft[iX] * 3 + 2) >> 2;
+					convertXPoints(&iXnN1, &iX, &iXn, &iXnP2);
 					saveVp9Matri(vp9_Matri, j*bs + 1, iXnN1, iX, iXn, iXnP2, vp9_dst[j][i]);
 				}
 				else if (j == iHeight - 1) {
@@ -105,6 +108,7 @@ void Vp9Predicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 					iXn = bs - 1;
 					iXnP2 = bs - 1;
 					vp9_dst[j][i] = refLeft[iX];
+					convertXPoints(&iXnN1, &iX, &iXn, &iXnP2);
 					saveVp9Matri(vp9_Matri, (bs - 1)*bs + i, iXnN1, iX, iXn, iXnP2, vp9_dst[j][i]);
 				}
 				saveDistanceMatri(distanMatri, uiDirMode, iWidth, iHeight, i, j, iXnN1, iX, iXn, iXnP2);
@@ -138,8 +142,8 @@ void Vp9Predicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 				else {
 					iXnN1 = (j / 2) + i;
 					iX = (j / 2) + i + 1;
-					iXn = (j / 2) + i + 1;
-					iXnP2 = (j / 2) + i + 1;
+					iXn = (j / 2) + i;
+					iXnP2 = (j / 2) + i;
 					vp9_dst[j][i] = AVG2(refAbove[iXnN1], refAbove[iX]);
 				}
 				saveDistanceMatri(distanMatri, uiDirMode, iWidth, iHeight, i, j, iXnN1, iX, iXn, iXnP2);
@@ -174,8 +178,8 @@ void Vp9Predicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 				if ((j == 0)) {
 					iXnN1 = i - 1;
 					iX = i;
-					iXn = i;
-					iXnP2 = i;
+					iXn = i - 1;
+					iXnP2 = i - 1;
 					vp9_dst[j][i] = AVG2(refAbove[iXnN1], refAbove[iX]);
 					saveVp9Matri(vp9_Matri, i, iXnN1, iX, iXn, iXnP2, vp9_dst[j][i]);
 				}
@@ -191,7 +195,7 @@ void Vp9Predicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 					iXnN1 = -2;
 					iX = -1;
 					iXn = 0;
-					iXnP2 = 0;
+					iXnP2 = 0; // left[ 0 ] + top[ -1 ] * 2 + top[ 0 ] + 2
 					vp9_dst[j][i] = AVG3(refLeft[iXn], refAbove[iX], refAbove[iXn]);
 					saveVp9Matri(vp9_Matri, bs, iXnN1, iX, iXn, iXnP2, vp9_dst[j][i]);
 				}
@@ -287,16 +291,16 @@ void Vp9Predicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 				if ((j == 0) && (i == 0)) {
 					iXnN1 = -1;
 					iX = -2;
-					iXn = -2;
-					iXnP2 = -2;
+					iXn = -1;
+					iXnP2 = -1;
 					vp9_dst[j][i] = AVG2(refAbove[iXnN1], refLeft[iX + 2]);
 					saveVp9Matri(vp9_Matri, 0, iXnN1, iX, iXn, iXnP2, vp9_dst[j][i]);
 				}
 				else if ((j != 0) && (i == 0)) {
 					iXnN1 = j - 1;
 					iX = j;
-					iXn = j;
-					iXnP2 = j;
+					iXn = j - 1;
+					iXnP2 = j - 1;
 					vp9_dst[j][i] = AVG2(refLeft[iXnN1], refLeft[iX]);
 					convertXPoints(&iXnN1, &iX, &iXn, &iXnP2);
 					saveVp9Matri(vp9_Matri, j*bs, iXnN1, iX, iXn, iXnP2, vp9_dst[j][i]);

@@ -17,14 +17,23 @@
 #define EXIT_FAILURE 1
 #define TEST_PROTOCOL "avs2"
 #define TEST_CALC_METHOD 1
+// CompareType 0: compare with hardware and cmode. 1:compare with software and cmode 
+#define TEST_COMPARE_METHOD 0 
 #define SRC_GENERATE_MODE   0  
 #define PROTOCOL_NUMBER 4
-#define TEST_TIMES 100
+#define TEST_TIMES 1
 #define CALC_NUMBER 5
-#define PROCESS_ALL 
-char protocolName[PROTOCOL_NUMBER][MAX_PATH_LENGHT] = { "avs2", "hevc","h264" ,"vp9"};
-//char protocolName[PROTOCOL_NUMBER][MAX_PATH_LENGHT] = { "h264" ,"vp9" };
+// process all protocol and method  or process protocol and method define by TEST_PROTOCOL TEST_CALC_METHOD
+#define PROCESS_ALL
+//#define CALC_DISTANCE //  compute distance or just compare
+//#define CALC_NUMBER 1
+char protocolName[PROTOCOL_NUMBER][MAX_PATH_LENGHT] = { "avs2", "hevc","h264" ,"vp9" };
 int calcMethod[CALC_NUMBER] = { CALCU_MODE_ROW ,CALCU_MODE_COL , CALCU_MODE_MATRI,CALCU_MODE_MATRI_4X2 ,CALCU_MODE_MATRI_2X4 };
+//int calcMethod[CALC_NUMBER] = {CALCU_MODE_MATRI};
+//char protocolName[PROTOCOL_NUMBER][MAX_PATH_LENGHT] = { "h264" ,"vp9" };
+
+
+
 IntraPredicter* GetIntraPredicter(char *protocol);
 IntraPredicter* GetIntraPredicterCMode(char *protocol);
 void singlePredictProcedure(char *protocol, int calcMethod);
@@ -40,7 +49,7 @@ int main(int argc, char* argv[]) {
 				singlePredictProcedure(protocolName[i], calcMethod[j]);
 			}
 #else
-			IntraPredicterCompare* intraPredicterCompare = new IntraPredicterCompare();
+			IntraPredicterCompare* intraPredicterCompare = new IntraPredicterCompare(TEST_COMPARE_METHOD);
 			intraPredicterCompare->pixelComPare(protocolName[i]);
 #endif 
 		}
@@ -70,13 +79,17 @@ void singlePredictProcedure(char *protocol, int calcMethod) {
 IntraPredicter* GetIntraPredicter(char *value) {
 	if (strcmp(value, "avs2") == 0) {
 		return new AVS2Predicter();
-	}else if (strcmp(value, "hevc") == 0) {
+	}
+	else if (strcmp(value, "hevc") == 0) {
 		return new  HevcPredicter();
-	}else if (strcmp(value, "h264") == 0) {
+	}
+	else if (strcmp(value, "h264") == 0) {
 		return new  H264Predicter();
-	}else if (strcmp(value, "vp9") == 0) {
+	}
+	else if (strcmp(value, "vp9") == 0) {
 		return new Vp9Predicter();
-	}else {
+	}
+	else {
 		return new AVS2Predicter();
 	}
 }
@@ -84,13 +97,17 @@ IntraPredicter* GetIntraPredicter(char *value) {
 IntraPredicter* GetIntraPredicterCMode(char *value) {
 	if (strcmp(value, "avs2") == 0) {
 		return new AVS2PredicterCMode();
-	}else if (strcmp(value, "hevc") == 0) {
+	}
+	else if (strcmp(value, "hevc") == 0) {
 		return new HevcPredicterCMode();
-	}else if (strcmp(value, "h264") == 0) {
+	}
+	else if (strcmp(value, "h264") == 0) {
 		return new H264PredicterCMode();
-	}else if (strcmp(value, "vp9") == 0) {
+	}
+	else if (strcmp(value, "vp9") == 0) {
 		return new Vp9PredicterCMode();
-	}else {
+	}
+	else {
 		return new AVS2PredicterCMode();
 	}
 

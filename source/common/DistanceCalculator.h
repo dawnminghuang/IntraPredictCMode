@@ -27,6 +27,7 @@ public:
 	void setOutPutWriter(OutputWriter* outPutWriter);
 private:
 	void initCalcuParas();
+	void initMinMaxPair();
 	void initCalcuMatri(int width, int height);
 	void deinitCalcuMatri(int width, int height);
 	void calcuDistanceCol(DistanceData* distanceMatri);
@@ -37,7 +38,9 @@ private:
 	void calcuMinMaxPosition();
 	int calcMin(int** data, int width, int height);
 	int calcMax(int** data, int width, int height);
-	void isMinMaxDiag(int position, int calcRatio, bool *isDiag);
+	void isMinMaxDiag(int position, int calcRatio, bool *isDiag, bool max);
+	void isMaxMinPair(bool *isPair);
+	bool isMaxMinPairAlreadyIn(int x, int y, bool max);
 	void writeDiagPostionToFile();
 public:
 	int calcu_mode;
@@ -48,6 +51,7 @@ public:
 	int *row_max_distance;
 	int *matri_max_distance;
 	int *matri4X2_max_distance;
+	int *matri2X4_max_distance;
 	int *cu_distance;
 	int *pos_x;
 	int *pos_y;
@@ -59,10 +63,15 @@ public:
 	int distance_size;
 	int tu_width;
 	int tu_height;
+	int mini;
+	int maxi;
+	int max_index[4][2];
+	int min_index[4][2];
 	int calc_pixel_number;
 	bool is_min_diag;
 	bool is_max_diag;
 	bool is_diag;
+	bool is_pair;
 	OutputWriter*   output_writer;
 };
 

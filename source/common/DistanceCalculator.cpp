@@ -15,9 +15,12 @@ DistanceCalculator::DistanceCalculator() {
 	output_writer = NULL;
 	matri_max = 0;
 	matri_min = 0;
+	mini = 0;
+	maxi = 0;
 	is_max_diag = false;
 	is_min_diag = false;
 	is_diag = false;
+	is_pair = false;
 }
 
 DistanceCalculator::~DistanceCalculator() {
@@ -45,8 +48,22 @@ void DistanceCalculator::initCalcuParas() {
 	for (int i = 0; i < max_point_number; i++) {
 		cu_distance[i] = 0;
 	}
+	for (int i = 0; i < CALCURATIO; i++) {
+		max_index[i][0] = -1;
+		max_index[i][1] = -1;
+		min_index[i][0] = -1;
+		min_index[i][1] = -1;
+	}
 }
 
+void DistanceCalculator::initMinMaxPair() {
+	for (int i = 0; i < CALCURATIO; i++) {
+		max_index[i][0] = -1;
+		max_index[i][1] = -1;
+		min_index[i][0] = -1;
+		min_index[i][1] = -1;
+	}
+}
 void DistanceCalculator::initCalcuMatri(int width, int height) {
 	calc_matri = new int *[height];
 	for (int i = 0; i < height; i++) {
@@ -342,31 +359,85 @@ void DistanceCalculator::calcuMinMaxPosition()
 	is_max_diag = false;
 	is_min_diag = false;
 	is_diag = false;
-
+	is_pair = false;
+	mini = 0;
+	maxi = 0;
+	bool ismax = false;
+	initMinMaxPair();
 	for (int j = 0; j < calc_pixel_number; j++) {
 		calc_matri_dig[j] = 0;
 		for (int i = 0; i < distance_size; i++) {
 			if (calc_matri[j][i] == matri_max) {
-				isMinMaxDiag(j, CALCURATIO, &is_max_diag);
+				ismax = true;
+				isMinMaxDiag(j, CALCURATIO, &is_max_diag, ismax);
 				calc_matri_dig[j] = 1;
 			}
 			if (calc_matri[j][i] == matri_min) {
-				isMinMaxDiag(j, CALCURATIO,&is_min_diag);
+				ismax = false;
+				isMinMaxDiag(j, CALCURATIO,&is_min_diag, ismax);
 				calc_matri_dig[j] = 1;
 			}
 		}
 	}
+	if(calcu_mode == CALCU_MODE_MATRI){
+		isMaxMinPair(&is_pair);
+	}
 	is_diag = (is_max_diag && is_min_diag);
 }
 
-void DistanceCalculator::isMinMaxDiag(int position, int calcRatio, bool *isDiag)
+void DistanceCalculator::isMaxMinPair(bool *isPair)
+{
+	for (int i = 0; i < CALCURATIO; i++) {
+		int maxx = max_index[i][0];
+		int maxy = max_index[i][1];
+		for (int j = 0; j < CALCURATIO; j++) {
+			int minx = min_index[j][0];
+			int miny = min_index[j][1];
+			if (((abs(maxx - minx) + abs(maxy - miny)) == 6) || ((abs(maxx - minx) + abs(maxy - miny)) == 0)) {
+				*isPair = true;
+			}
+		}
+	}
+}
+
+bool DistanceCalculator::isMaxMinPairAlreadyIn(int x, int y, bool max)
+{
+	int xx = -1;
+	int yy = -1;
+	for (int i = 0; i < CALCURATIO; i++) {
+		if(max){
+			xx = max_index[i][0];
+			yy = max_index[i][1];
+		}else {
+			xx = min_index[i][0];
+			yy = min_index[i][1];
+		}
+		if ((xx == x) && (yy == y)) {
+			return true;
+		}
+	}
+	return false;
+}
+void DistanceCalculator::isMinMaxDiag(int position, int calcRatio, bool *isDiag, bool max)
 {
 	int y = position / calcRatio;
 	int x = position % calcRatio;
 	if(calcu_mode == CALCU_MODE_MATRI){
-
 		if (((x == 0) && (y == 0)) || ((x == 3) && (y == 0)) || ((x == 0) && (y == 3)) || ((x == 3) && (y == 3))) {
 			*isDiag = true;
+			if (max) {
+				if(!isMaxMinPairAlreadyIn(x,y,max)){
+					max_index[maxi][0] = x;
+					max_index[maxi][1] = y;
+					maxi++ ;
+				}
+			}else {
+				if(!isMaxMinPairAlreadyIn(x, y, max)){
+					min_index[mini][0] = x;
+					min_index[mini][1] = y;
+					mini++;
+				}
+			}
 		}
 	}else if (calcu_mode == CALCU_MODE_MATRI_4X2) {
 		y = position/(calcRatio / 2);
@@ -395,22 +466,27 @@ void DistanceCalculator::isMinMaxDiag(int position, int calcRatio, bool *isDiag)
 	}
 }
 
+
 void DistanceCalculator::writeDiagPostionToFile(){
 	if (calc_matri && output_writer) {
 		if(!is_diag){
 			int y_ratio = CALCURATIO;
-			if(calcu_mode == CALCU_MODE_MATRI){
-		        y_ratio = CALCURATIO;
-			//output_writer->writeModeInfoToFile(calc_matri, calc_matri_dig, calc_pixel_number, distance_size, y_ratio);
-			    output_writer->writeModeInfoToFile(calc_matri, calc_pixel_number, distance_size, y_ratio);
-			}
-			else if (calcu_mode == CALCU_MODE_MATRI_4X2) {
+            if (calcu_mode == CALCU_MODE_MATRI_4X2) {
 				y_ratio = CALCURATIO/2;
 				//output_writer->writeModeInfoToFile(calc_matri, calc_matri_dig, calc_pixel_number, distance_size, y_ratio);
 				output_writer->writeModeInfoToFile(calc_matri, calc_pixel_number, distance_size, y_ratio);
 			}
 			else if (calcu_mode == CALCU_MODE_MATRI_2X4) {
 				y_ratio = CALCURATIO;
+				//output_writer->writeModeInfoToFile(calc_matri, calc_matri_dig, calc_pixel_number, distance_size, y_ratio);
+				output_writer->writeModeInfoToFile(calc_matri, calc_pixel_number, distance_size, y_ratio);
+			}
+		}
+		if (!is_pair || !is_diag) {
+			int y_ratio = CALCURATIO;
+			if (calcu_mode == CALCU_MODE_MATRI) {
+				y_ratio = CALCURATIO;
+				printf("CALCU_MODE_MATRI no pair ...............\n");
 				//output_writer->writeModeInfoToFile(calc_matri, calc_matri_dig, calc_pixel_number, distance_size, y_ratio);
 				output_writer->writeModeInfoToFile(calc_matri, calc_pixel_number, distance_size, y_ratio);
 			}

@@ -15,10 +15,10 @@
 #define MAX_CU_SIZE_VP9 32
 #define NUM_EXTEND_SIZE_VP9 2
 #define MAX_PIXEL 255
-typedef enum {
+typedef enum  {
 	MODE_RANDOM = 0,
 	MODE_NORMAL = 1,
-} GenerateModes;
+}GenerateModes;
 
 class SrcData {
 public:

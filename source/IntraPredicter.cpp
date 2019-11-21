@@ -68,7 +68,7 @@ void IntraPredicter::generateDigOutPath(char * protocolPath, int calcMode) {
 		strcat(digOutPath, "modeColDig\\");
 	}
 	else if (calcMode == CALCU_MODE_MATRI) {
-		strcat(digOutPath, "modeMatriDig\\");
+		strcat(digOutPath, "modeMatriDigPair\\");
 	}
 	else if (calcMode == CALCU_MODE_MATRI_4X2) {
 		strcat(digOutPath, "modeMatri4X2Dig\\");
@@ -112,7 +112,11 @@ void IntraPredicter::writeMaxDistanceToFile(int calcMode)
 	}
 	else if (calcMode == CALCU_MODE_MATRI_4X2) {
 		outPutWriter->initDistanceInfoFp(protocolOutPath, "ModeMatri4X2");
-		outPutWriter->writeDistanceToFile(distanceCalculator->matri4X2_max_distance, distanceCalculator->mode_number);
+		outPutWriter->writeDistanceToFile(distanceCalculator->matri_max_distance, distanceCalculator->mode_number);
+	}
+	else if (calcMode == CALCU_MODE_MATRI_2X4) {
+		outPutWriter->initDistanceInfoFp(protocolOutPath, "ModeMatri2X4");
+		outPutWriter->writeDistanceToFile(distanceCalculator->matri_max_distance, distanceCalculator->mode_number);
 	}
 	else if (calcMode == CALCU_MODE_ALL) {
 		outPutWriter->initDistanceInfoFp(protocolOutPath, "ModeRow");
@@ -122,7 +126,9 @@ void IntraPredicter::writeMaxDistanceToFile(int calcMode)
 		outPutWriter->initDistanceInfoFp(protocolOutPath, "ModeMatri");
 		outPutWriter->writeDistanceToFile(distanceCalculator->matri_max_distance, distanceCalculator->mode_number);
 		outPutWriter->initDistanceInfoFp(protocolOutPath, "ModeMatri4X2");
-		outPutWriter->writeDistanceToFile(distanceCalculator->matri4X2_max_distance, distanceCalculator->mode_number);
+		outPutWriter->writeDistanceToFile(distanceCalculator->matri_max_distance, distanceCalculator->mode_number);
+		outPutWriter->initDistanceInfoFp(protocolOutPath, "ModeMatri2X4");
+		outPutWriter->writeDistanceToFile(distanceCalculator->matri_max_distance, distanceCalculator->mode_number);
 	}
 }
 
@@ -144,6 +150,49 @@ void IntraPredicter::writePostionToFile(DistanceData* distanMatri)
 {
 	if (distanMatri) {
 		outPutWriter->writeModeInfoToFile(distanMatri);
+	}
+}
+
+int IntraPredicter::calcMin(int** data, int width, int height)
+{
+	int min = data[0][0];
+	for (int j = 0; j < height; j++) {
+		for (int i = 0; i < width; i++) {
+			if (data[j][i] < min) {
+				min = data[j][i];
+			}
+		}
+	}
+	return min;
+}
+
+int IntraPredicter::calcMax(int** data, int width, int height)
+{
+	int max = data[0][0];
+	for (int j = 0; j < height; j++) {
+		for (int i = 0; i < width; i++) {
+			if (data[j][i] > max) {
+				max = data[j][i];
+			}
+		}
+
+	}
+	return max;
+}
+
+void IntraPredicter::initIndexMatri(int maxIndexNumber, int distanceSize) {
+	max_min_indexs = new int *[maxIndexNumber];
+	for (int i = 0; i < maxIndexNumber; i++) {
+		max_min_indexs[i] = new int[distanceSize]();
+	}
+}
+void IntraPredicter::deinitIndexMatri(int maxIndexNumber) {
+	if (max_min_indexs) {
+		for (int i = 0; i < maxIndexNumber; i++) {
+			delete[] max_min_indexs[i];
+		}
+		delete[] max_min_indexs;
+		max_min_indexs = NULL;
 	}
 }
 IntraPredicter::~IntraPredicter() {

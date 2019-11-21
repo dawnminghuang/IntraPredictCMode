@@ -35,12 +35,16 @@ SET(DIR_SRCS
     IntraPredicterCompare.h
 	Avs2Predicter.h
 	Avs2PredicterCMode.h
+    Avs2PredicterHW.h
 	H264Predicter.h
 	H264PredicterCMode.h
+	H264PredicterHW.h
 	HevcPredicter.h
 	HevcPredicterCMode.h
+    HevcPredicterHW.h
 	Vp9Predicter.h
 	Vp9PredicterCMode.h
+	Vp9PredicterHW.h
 	common/Log.cpp
 	common/OutputWriter.cpp
 	common/DistanceData.cpp
@@ -50,12 +54,16 @@ SET(DIR_SRCS
     IntraPredicterCompare.cpp
 	Avs2Predicter.cpp
 	Avs2PredicterCMode.cpp
+	Avs2PredicterHW.cpp
 	H264Predicter.cpp
 	H264PredicterCMode.cpp
+	H264PredicterHW.cpp
 	HevcPredicter.cpp
 	HevcPredicterCMode.cpp
+	HevcPredicterHW.cp
 	Vp9Predicter.cpp
 	Vp9PredicterCMode.cpp
+	Vp9PredicterHW.cpp
 	main.cpp
 )
 

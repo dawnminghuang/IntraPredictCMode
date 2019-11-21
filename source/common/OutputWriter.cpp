@@ -133,7 +133,13 @@ void  OutputWriter::writeModeInfoToFile(DistanceData *distanceData) {
 		for (int j = 0; j < distanceData->tu_height; j++) {
 			for (int i = 0; i < distanceData->tu_width; i++) {
 				if (modeInfoFp) {
-					fprintf(modeInfoFp, "%4d", distanceData->distance_matri[j][i][1]);
+					fprintf(modeInfoFp, "[");
+					fflush(modeInfoFp);
+					for (int k = 0; k < distanceData->distance_size; k++) {
+						fprintf(modeInfoFp, "%2d ", distanceData->distance_matri[j][i][k]);
+						fflush(modeInfoFp);
+					}
+					fprintf(modeInfoFp, "]");
 					fflush(modeInfoFp);
 					if (i == (distanceData->tu_width - 1)) {
 						fprintf(modeInfoFp, "\n");

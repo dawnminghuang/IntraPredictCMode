@@ -1,10 +1,12 @@
 #ifndef __HEVCCOMMON__
 #define __HEVCCOMMON__
-#define NUM_INTRA_PMODE_HEVC              33        //!< # luma intra prediction modes
+#define NUM_INTRA_PMODE_HEVC              35        //!< # luma intra prediction modes
 #define NUM_ANG_TABLE              9        //!< # luma intra prediction modes
 #define NUM_DISTANCE_SIZE_HEVC      2
 #define NUM_CU_SIZE_HEVC             5 
 #define START_INDEX_HEVC             2
+#define DC_IDX_HEVC                  1 ///< index for intra DC mode
+#define PLANAR_IDX_HEVC               0
 #define VER_IDX 26
 #define HOR_IDX 10
 #define VER_HOR_IDX 18
@@ -14,8 +16,8 @@
 #define HEVC_DATA_PATH "D:\\work\\IntraPredict\\modeHEVC\\dstData\\"
 #define HEVC_DATA_PATH_CMODE "D:\\work\\IntraPredict\\modeHEVC\\dstDataCMode\\"
 const int g_prdict_mode_hevc[NUM_INTRA_PMODE_HEVC] = {
-	2, 3, 4, 5, 6,
-	7, 8, 9, 10,
+	0,  1,  2,  3,  4,  5, 
+	6,  7,  8,  9,  10,
 	11, 12, 13, 14, 15,
 	16, 17, 18, 19,
 	20, 21, 22, 23, 24,

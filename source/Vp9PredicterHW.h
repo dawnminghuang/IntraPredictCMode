@@ -17,10 +17,12 @@ public:
 	void predPixelIndex(DistanceData* distanMatri, int j, int i);
 	void predIndexAll(DistanceData* distanMatri, int uiDirMode);
 	void predPixel(DistanceData* distanMatri, int j, int i);
+	void predPixelBi(DistanceData* distanMatri, int j, int i);
 	void initDstData();
 	void deinitDstData();
 	void generateRefer();
 	void predIntraAngAdi(DistanceData* distanMatri, int uiDirMode);
+	void predIntraTM(DistanceData* distanMatri, int uiDirMode);
 	void convertSrc(int* above, int *left);
 	void get4X4MaxMinIndex(DistanceData* distanMatri, int i, int j, int x_offset, int y_offset);
 	void saveMaxMinIndex(int  iYnN1, int iY, int iYn, int iYnP2);
@@ -28,20 +30,22 @@ public:
 	void firstGroupCopySrc(int* dst, int *src);
 	void secondGroupProcess();
 	void secondGroupCopySrc(int* dst, int *src);
-	void group256(int index);
-	void group128(int left, int right, int index);
-	void group64(int left, int right, int index);
-	void group32(int left, int right, int index);
 	int convertSrcIndex2RefIndex(int index);
 
 	int convertAboveSrcIndex2RefIndex(int* iYnN1, int* iY, int* iYn, int* iYnP2);
 	int convertAboveSrcIndex2RefIndex(int index);
 	int convertLeftSrcIndex2RefIndex(int* iYnN1, int* iY, int* iYn, int* iYnP2);
 	int convertLeftSrcIndex2RefIndex(int index);
-
+	int  biConvertSrcLeftIndex2LineRefIndex(int index);
+	int  biConvertSrcAboveIndex2LineRefIndex(int index);
 	void initVp9Matri(int width, int height, int distanceSize);
 	void saveVp9Matri(int ** vp9Matri, int index, int iYnN1, int iY, int iYn, int iYnP2, int predictData);
 	void deinitVp9Matri();
+
+	void biFirstGroupProcess();
+	void biFirstGroupCopySrc(int* dst, int *src);
+	void predIntraLumaAdi(DistanceData* distanMatri, int uiDirMode);
+	void predIntraChromaAdi(DistanceData* distanMatri, int uiDirMode);
 public:
 	bool is_mod_ver;
 	int intra_pred_angle_mode;
@@ -61,11 +65,22 @@ public:
 	int lineRefer256[LINE_REFER_SIZE_256];
 	int lineRefer32[LINE_REFER_SIZE_32];
 	int lineRefer16[LINE_REFER_SIZE_16];
+
+	int biLeftFirstBouds[2];
+	int biLeftSecondBouds[2];
+	int biAboveFirstBouds[2];
+	int biAboveSecondBouds[2];
+	int leftlineRefer4[LINEREFER4];
+	int leftlineRefer8[LINEREFER8];
+	int AbovelineRefer4[LINEREFER4];
+	int AbovelineRefer8[LINEREFER8];
 	int uiDirMode;
 	// VP9
 	int bs;
 	int **vp9_Matri;
 	int point_number;
+	int mode;
+	int ytop_left;
 };
 
 #endif

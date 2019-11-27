@@ -27,7 +27,7 @@ void Vp9PredicterHW::deinitVp9Matri() {
 }
 
 void Vp9PredicterHW::predict() {
-	int mode_number = NUM_INTRA_PMODE_VP9 + START_INDEX_VP9;
+	int mode_number = NUM_INTRA_PMODE_VP9;
 	int max_cu_size = 64;
 	generateOutPath(VP9_PATH, calc_mode);
 	generateDigOutPath(VP9_PATH, calc_mode);
@@ -57,7 +57,23 @@ void Vp9PredicterHW::predict() {
 	}
 	writeMaxDistanceToFile(calc_mode);
 }
-
+void Vp9PredicterHW::predIntraLumaAdi(DistanceData* distanMatri, int uiDirMode) {
+	mode = uiDirMode;
+	if (uiDirMode == MODE_TM) {
+		predIntraTM(distanMatri, uiDirMode);
+	}else {
+		predIntraAngAdi(distanMatri, uiDirMode);
+	}
+}
+void Vp9PredicterHW::predIntraChromaAdi(DistanceData* distanMatri, int uiDirMode) {
+	mode = uiDirMode;
+	if (uiDirMode == MODE_TM) {
+		predIntraTM(distanMatri, uiDirMode);
+	}
+	else {
+		predIntraAngAdi(distanMatri, uiDirMode);
+	}
+}
 
 void Vp9PredicterHW::predIntraAngAdi(DistanceData* distanMatri, int mode) {
 	int iWidth = tu_width;
@@ -67,6 +83,13 @@ void Vp9PredicterHW::predIntraAngAdi(DistanceData* distanMatri, int mode) {
 	int x_offset = CALCURATIO;
 	int y_offset = CALCURATIO;
 	int max_index_number = CALCURATIO;
+	// chrome when tu size is [4,y] or [x,4]
+	if (tu_width < CALCURATIO) {
+		x_offset = CALCURATIO / 2;
+	}
+	if (tu_height < CALCURATIO) {
+		y_offset = CALCURATIO / 2;
+	}
 	int width_number = tu_width / x_offset;
 	int heigh_number = tu_height / y_offset;
 	int cal_matri_index = 0;
@@ -94,8 +117,99 @@ void Vp9PredicterHW::predIntraAngAdi(DistanceData* distanMatri, int mode) {
 	deinitIndexMatri(max_index_number);
 }
 
+void Vp9PredicterHW::predIntraTM(DistanceData* distanMatri, int uiDirMode) {
+
+	int iWidth = tu_width;
+	int iHeight = tu_height;
+	int bitDepth = 8;
+	int srcStride = 2 * iWidth + 1;
+	int x_offset = CALCURATIO;
+	int y_offset = CALCURATIO;
+	int max_index_number = CALCURATIO;
+	// chrome when tu size is [4,y] or [x,4]
+	if (tu_width < CALCURATIO) {
+		x_offset = CALCURATIO / 2;
+	}
+	if (tu_height < CALCURATIO) {
+		y_offset = CALCURATIO / 2;
+	}
+	int width_number = tu_width / x_offset;
+	int heigh_number = tu_height / y_offset;
+	int cal_matri_index = 0;
+	int distance_index = 0;
+	mode = uiDirMode;
+	generateRefer();
+	predIndexAll(distanMatri, mode);
+	initIndexMatri(max_index_number, NUM_DISTANCE_SIZE_VP9);
+	for (int j = 0; j < heigh_number; j++) {
+		for (int i = 0; i < width_number; i++) {
+			get4X4MaxMinIndex(distanMatri,i, j, x_offset, y_offset);
+			biFirstGroupProcess();
+			for (int m = j * y_offset; m < y_offset*(j + 1); m++) {
+				//printf("scanByRow: first_bouds[0]:%d, first_bouds[1]:%d, second_bouds[0]:%d, second_bouds[1]:%d \n", 
+					//first_bouds[0], first_bouds[1], second_bouds[0], second_bouds[1]);
+				for (int n = i * x_offset; n < x_offset*(i + 1); n++) {
+					predPixelBi(distanMatri,m, n);
+				}
+			}
+		}
+	}
+	deinitIndexMatri(max_index_number);
+
+}
+
+void Vp9PredicterHW::biFirstGroupCopySrc(int* dst, int *src) {
+
+	//  case 256 point
+	if (first_bouds[1] == MAX_INDEX) {
+		first_bouds[1] = MAX_INDEX + 1;
+	}
+	for (int j = first_bouds[0]; j <= first_bouds[1]; j++) {
+		int refIndex = j - first_bouds[0];
+		dst[refIndex] = src[j];
+	}
+}
+void Vp9PredicterHW::biFirstGroupProcess() {
+
+	//left
+	groupType = GROUD_TYPE_MIN;
+	extraType = EXTRACT_BOUND_4;
+	group256(bi_left_min);
+	first_bouds[0] = minBounds[0];
+	first_bouds[1] = minBounds[1];
+	biFirstGroupCopySrc(leftlineRefer8, lineRefer256);
+	biLeftFirstBouds[0] = first_bouds[0];
+	first_bouds[0] = bi_left_min - biLeftFirstBouds[0];
+	first_bouds[1] = first_bouds[0] + LINEREFER4 - 1;
+	biLeftSecondBouds[0] = first_bouds[0];
+	biFirstGroupCopySrc(leftlineRefer4, leftlineRefer8);
+
+	//above
+	extraType = EXTRACT_BOUND_4;
+	groupType = GROUD_TYPE_MIN;
+	group256(bi_above_min);
+	groupType = GROUD_TYPE_MAX;
+	group256(bi_above_max);
+
+	first_bouds[0] = minBounds[0];
+	if (minBounds[0] <= maxBounds[0]) {
+		first_bouds[0] = minBounds[0];
+	}
+	first_bouds[1] = maxBounds[1];
+	if (maxBounds[1] >= minBounds[1]) {
+		first_bouds[1] = maxBounds[1];
+	}
+
+	biFirstGroupCopySrc(AbovelineRefer8, lineRefer256);
+	biAboveFirstBouds[0] = first_bouds[0];
+	first_bouds[0] = bi_above_min - biAboveFirstBouds[0];
+	first_bouds[1] = first_bouds[0] + LINEREFER4 - 1;
+	biAboveSecondBouds[0] = first_bouds[0];
+	biFirstGroupCopySrc(AbovelineRefer4, AbovelineRefer8);
+}
 void Vp9PredicterHW::firstGroupProcess() {
 	groupType = GROUD_TYPE_MIN;
+	extraType = EXTRACT_BOUND_16;
 	group256(min_index);
 	groupType = GROUD_TYPE_MAX;
 	group256(max_index);
@@ -435,6 +549,40 @@ void Vp9PredicterHW::predIndexAll(DistanceData* distanMatri, int uiDirMode) {
 			}
 		}
 	}
+	if (uiDirMode == 7) {
+		for (int j = 0; j < iHeight; j++) {
+			for (int i = 0; i < iWidth; i++) {
+				iXnN1 = i;
+				iX = i;
+				iXn = i;
+				iXnP2 = i;
+				saveDistanceMatri(distanMatri, uiDirMode, iWidth, iHeight, i, j, iXnN1, iX, iXn, iXnP2);
+			}
+		}
+	}
+	if (uiDirMode == 8) {
+		for (int j = 0; j < iHeight; j++) {
+			for (int i = 0; i < iWidth; i++) {
+				iXnN1 = j;
+				iX = j;
+				iXn = j;
+				iXnP2 = j;
+				convertXPoints(&iXnN1, &iX, &iXn, &iXnP2);
+				saveDistanceMatri(distanMatri, uiDirMode, iWidth, iHeight, i, j, iXnN1, iX, iXn, iXnP2);
+			}
+		}
+	}
+	if (uiDirMode == 9) {
+		for (int j = 0; j < iHeight; j++) {
+			for (int i = 0; i < iWidth; i++) {
+				iXnN1 = i;
+				iX = i;
+				iXn = -j- 2;
+				iXnP2 = -j-2;
+				saveDistanceMatri(distanMatri, uiDirMode, iWidth, iHeight, i, j, iXnN1, iX, iXn, iXnP2);
+			}
+		}
+	}
 }
 void Vp9PredicterHW::saveVp9Matri(int ** vp9Matri, int index, int iYnN1, int iY, int iYn, int iYnP2, int predictData)
 {
@@ -556,8 +704,29 @@ void Vp9PredicterHW::predPixel(DistanceData* distanMatri, int j, int i) {
 			}
 		}
 	}
-}
+	if (uiDirMode == 7) {
+	    vp9_dst[j][i] = lineRefer16[iX];
+	}
 
+	if (uiDirMode == 8) {
+		vp9_dst[j][i] = lineRefer16[iX];
+	}
+
+}
+void Vp9PredicterHW::predPixelBi(DistanceData* distanMatri, int j, int i)
+{
+	int iXnN1 = distanMatri->distance_matri[j][i][0];
+	int iX = distanMatri->distance_matri[j][i][1];
+	int iXn = distanMatri->distance_matri[j][i][2];
+	int iXnP2 = distanMatri->distance_matri[j][i][3];
+	int aboveIndex = biConvertSrcAboveIndex2LineRefIndex(iX);
+	int top =AbovelineRefer4[aboveIndex];
+	int leftIndex = biConvertSrcLeftIndex2LineRefIndex(iXn);
+	int left  = leftlineRefer4[leftIndex];
+	//printf("predx:%d, pT[i]:%d, pTop[x]:%d, ishift_x:%d, wxy:%d, offset:%d, ishift_xy:%d \n", predx, pT[i], pTop[i], wxy, ishift_x, offset, ishift_xy);
+	vp9_dst[j][i] = clip_pixel(top  + left - ytop_left);
+
+}
 int Vp9PredicterHW::convertLeftSrcIndex2RefIndex(int* iYnN1, int* iY, int* iYn, int* iYnP2) {
 	int secondBouds = second_bouds[0];
 	*iYnN1 = -*iYnN1 - 2 + CENTRE_OFFSET_VP9 - secondBouds;
@@ -575,6 +744,19 @@ int Vp9PredicterHW::convertAboveSrcIndex2RefIndex(int* iYnN1, int* iY, int* iYn,
 	*iYn = *iYn + CENTRE_OFFSET_VP9 - secondBouds;
 	*iYnP2 = *iYnP2 + CENTRE_OFFSET_VP9 - secondBouds;
 	return 0;
+}
+
+int Vp9PredicterHW::biConvertSrcLeftIndex2LineRefIndex(int index) {
+	int firstBound = biLeftFirstBouds[0];
+	int secondBound = biLeftSecondBouds[0];
+	int indexOut = index + CENTRE_OFFSET_VP9 - firstBound - secondBound;
+	return indexOut;
+}
+int Vp9PredicterHW::biConvertSrcAboveIndex2LineRefIndex(int index) {
+	int firstBound = biAboveFirstBouds[0];
+	int secondBound = biAboveSecondBouds[0];
+	int indexOut = index + CENTRE_OFFSET_VP9 - firstBound - secondBound;
+	return indexOut;
 }
 
 int Vp9PredicterHW::convertLeftSrcIndex2RefIndex(int index) {
@@ -601,6 +783,7 @@ void Vp9PredicterHW::generateRefer() {
 		lineRefer256[lineRefIndex] = refLeft[i];
 	}
 	lineRefer256[CENTRE_OFFSET_VP9 - 1] = Above[0];// lineRefer[128] = refLeft[-1] = refAbove[-1]
+	ytop_left = Above[0];
 }
 
 void Vp9PredicterHW::get4X4MaxMinIndex(DistanceData* distanMatri, int i, int j, int x_offset, int y_offset) {
@@ -617,9 +800,15 @@ void Vp9PredicterHW::get4X4MaxMinIndex(DistanceData* distanMatri, int i, int j, 
 	predPixelIndex(distanMatri,y, x4);
 	save_index++;
 	predPixelIndex(distanMatri,y4, x4);
-	int max_index_number = save_index + 1;
-	max_index = calcMax(max_min_indexs, NUM_DISTANCE_SIZE_VP9, max_index_number);
-	min_index = calcMin(max_min_indexs, NUM_DISTANCE_SIZE_VP9, max_index_number);
+	if (mode == MODE_TM) {
+		bi_left_min = max_min_indexs[1][3];
+		bi_above_min = max_min_indexs[0][0];
+		bi_above_max = max_min_indexs[2][0];
+	}else{ 
+		int max_index_number = save_index + 1;
+		max_index = calcMax(max_min_indexs, NUM_DISTANCE_SIZE_VP9, max_index_number);
+		min_index = calcMin(max_min_indexs, NUM_DISTANCE_SIZE_VP9, max_index_number);
+	}
 }
 
 
@@ -631,72 +820,6 @@ void Vp9PredicterHW::saveMaxMinIndex(int  iYnN1, int iY, int iYn, int iYnP2)
 	max_min_indexs[save_index][3] = iYnP2 + CENTRE_OFFSET_VP9;
 }
 
-void Vp9PredicterHW::group256(int index) {
-	int left128 = 0;
-	int right128 = 0;
-	int boud128 = MAX_INDEX / 2;
-	if (index <= boud128) {
-		left128 = 0;
-		right128 = boud128;
-	}
-	else {
-		left128 = boud128 + 1;
-		right128 = MAX_INDEX;
-	}
-	group128(left128, right128, index);
-}
-
-void Vp9PredicterHW::group128(int left, int right, int index) {
-	int left64 = 0;
-	int right64 = 0;
-	int boud64 = left + (right - left) / 2;
-	if (index <= boud64) {
-		left64 = left;
-		right64 = boud64;
-	}
-	else {
-		left64 = boud64 + 1;
-		right64 = right;
-	}
-	group64(left64, right64, index);
-}
-
-void Vp9PredicterHW::group64(int left, int right, int index) {
-	int left32 = 0;
-	int right32 = 0;
-	int boud32 = left + (right - left) / 2;
-	if (index <= boud32) {
-		left32 = left;
-		right32 = boud32;
-	}else {
-		left32 = boud32 + 1;
-		right32 = right;
-	}
-	group32(left32, right32, index);
-}
-
-void Vp9PredicterHW::group32(int left, int right, int index) {
-	int left16 = 0;
-	int right16 = 0;
-	int bounds[2] = { 0 };
-	int boud16 = left + (right - left) / 2;
-	if (index <= boud16) {
-		bounds[0] = left;
-		bounds[1] = boud16;
-	}
-	else {
-		bounds[0] = boud16 + 1;
-		bounds[1] = right;
-	}
-	if (groupType == GROUD_TYPE_MIN) {
-		minBounds[0] = bounds[0];
-		minBounds[1] = bounds[1];
-	}
-	else {
-		maxBounds[0] = bounds[0];
-		maxBounds[1] = bounds[1];
-	}
-}
 
 void Vp9PredicterHW::convertSrc(int* above, int *left) {
 	if ((src_data && src_data->vp9_src)) {

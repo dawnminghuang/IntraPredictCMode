@@ -19,6 +19,7 @@
 #define TEST_CALC_METHOD 1
 // CompareType 0: compare with hardware and cmode. 1:compare with software and cmode 
 #define TEST_COMPARE_METHOD 0 
+#define TEST_COMPUTE_METHOD 1
 #define SRC_GENERATE_MODE   0  
 #define PROTOCOL_NUMBER 4
 #define TEST_TIMES 1
@@ -27,7 +28,7 @@
 #define PROCESS_ALL
 //#define CALC_DISTANCE //  compute distance or just compare
 //#define CALC_NUMBER 1
-char protocolName[PROTOCOL_NUMBER][MAX_PATH_LENGHT] = { "avs2", "hevc","h264" ,"vp9" };
+char protocolName[PROTOCOL_NUMBER][MAX_PATH_LENGHT] = {"vp9" , "h264" , "avs2", "hevc"};
 int calcMethod[CALC_NUMBER] = { CALCU_MODE_ROW ,CALCU_MODE_COL , CALCU_MODE_MATRI,CALCU_MODE_MATRI_4X2 ,CALCU_MODE_MATRI_2X4 };
 //int calcMethod[CALC_NUMBER] = {CALCU_MODE_MATRI};
 //char protocolName[PROTOCOL_NUMBER][MAX_PATH_LENGHT] = { "h264" ,"vp9" };
@@ -49,7 +50,7 @@ int main(int argc, char* argv[]) {
 				singlePredictProcedure(protocolName[i], calcMethod[j]);
 			}
 #else
-			IntraPredicterCompare* intraPredicterCompare = new IntraPredicterCompare(TEST_COMPARE_METHOD);
+			IntraPredicterCompare* intraPredicterCompare = new IntraPredicterCompare(TEST_COMPARE_METHOD, TEST_COMPUTE_METHOD);
 			intraPredicterCompare->pixelComPare(protocolName[i]);
 #endif 
 		}

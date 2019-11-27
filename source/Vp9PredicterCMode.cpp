@@ -12,7 +12,7 @@ Vp9PredicterCMode::~Vp9PredicterCMode() {
 }
 
 void Vp9PredicterCMode::predict() {
-	int mode_number = NUM_INTRA_PMODE_VP9 + START_INDEX_VP9;
+	int mode_number = NUM_INTRA_PMODE_VP9;
 	int max_cu_size = 64;
 	generateOutPath(VP9_PATH, calc_mode);
 	distanceCalculator->initDistanceCalculator(mode_number, max_cu_size, calc_mode);
@@ -21,23 +21,45 @@ void Vp9PredicterCMode::predict() {
 		outPutWriter->initDstDataFp(VP9_DATA_PATH_CMODE, uiDirMode);
 		distanceCalculator->setPredictMode(uiDirMode);
 		for (int j = 0; j < NUM_CU_SIZE_VP9; j++) {
-			int iWidth = g_cu_size_vp9[j][0];
-			int iHeight = g_cu_size_vp9[j][1];
-			tu_width = iWidth;
-			tu_height = iHeight;
-			stride = tu_width;
-			bs = tu_width;
-			initDstData();
-			DistanceData* distanMatri = new DistanceData(iWidth, iHeight, NUM_DISTANCE_SIZE_VP9);
-			predIntraAngAdi(distanMatri, uiDirMode);
-			distanceCalculator->calcuDistance(distanMatri);
-			outPutWriter->writeDstDataToFile(vp9_dst, iWidth, iHeight, stride);
-			deinitDstData();
-			delete distanMatri;
+			for (int k = 0; k < NUM_COLOR_SPACE_SIZE; k++) {
+				if (k == COLOR_SPACE_LUMA) {
+					tu_width = g_cu_size_vp9[j][0];
+					tu_height = g_cu_size_vp9[j][1];
+					stride = tu_width;
+					bs = tu_width;
+					initDstData();
+					DistanceData* distanMatri = new DistanceData(tu_width, tu_height, NUM_DISTANCE_SIZE_VP9);
+					predIntraLumaAdi(distanMatri, uiDirMode);
+					outPutWriter->writeDstDataToFile(vp9_dst, tu_width, tu_height, stride);
+					deinitDstData();
+					delete distanMatri;
+				}
+				else {
+					tu_width = g_cu_size_vp9[j][0] / 2;
+					tu_height = g_cu_size_vp9[j][1] / 2;
+					stride = tu_width;
+					bs = tu_width;
+					initDstData();
+					DistanceData* distanMatri = new DistanceData(tu_width, tu_height, NUM_DISTANCE_SIZE_VP9);
+					if (bs >= 4) {
+						predIntraChromaAdi(distanMatri, uiDirMode);
+						outPutWriter->writeDstDataToFile(vp9_dst, tu_width, tu_height, stride);
+					}
+					deinitDstData();
+					delete distanMatri;
+				}
+			}
 		}
 	}
 }
 
+void Vp9PredicterCMode::predIntraLumaAdi(DistanceData* distanMatri, int uiDirMode) {
+	predIntraAngAdi(distanMatri, uiDirMode);
+}
+
+void Vp9PredicterCMode::predIntraChromaAdi(DistanceData* distanMatri, int uiDirMode) {
+	predIntraAngAdi(distanMatri, uiDirMode);
+}
 void Vp9PredicterCMode::d207_predictor(uint8_t *above, uint8_t *left) {
 	int r, c;
 	(void)above;
@@ -166,6 +188,38 @@ void Vp9PredicterCMode::d153_predictor(uint8_t *above, uint8_t *left) {
 		dst += stride;
 	}
 }
+
+
+ void Vp9PredicterCMode::v_predictor(uint8_t *above, uint8_t *left) {
+	int r;
+	(void)left;
+	uint8_t *dst = vp9_dst;
+	for (r = 0; r < bs; r++) {
+		memcpy(dst, above, bs);
+		dst += stride;
+	}
+}
+
+void Vp9PredicterCMode::h_predictor(uint8_t *above, uint8_t *left) {
+	int r;
+	(void)above;
+	uint8_t *dst = vp9_dst;
+	for (r = 0; r < bs; r++) {
+		memset(dst, left[r], bs);
+		dst += stride;
+	}
+}
+
+void Vp9PredicterCMode::tm_predictor(uint8_t *above, uint8_t *left) {
+	int r, c;
+	int ytop_left = above[-1];
+	uint8_t *dst = vp9_dst;
+	for (r = 0; r < bs; r++) {
+		for (c = 0; c < bs; c++)
+			dst[c] = clip_pixel(left[r] + above[c] - ytop_left);
+		dst += stride;
+	}
+}
 void Vp9PredicterCMode::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 	int iWidth = distanMatri->tu_width;
 	int iHeight = distanMatri->tu_height;
@@ -196,6 +250,15 @@ void Vp9PredicterCMode::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode
 	}
 	if (uiDirMode == 6) {
 		d153_predictor(refAbove, refLeft);
+	}
+	if (uiDirMode == 7) {
+		v_predictor(refAbove, refLeft);
+	}
+	if (uiDirMode == 8) {
+		h_predictor(refAbove, refLeft);
+	}
+	if (uiDirMode == 9) {
+		tm_predictor(refAbove, refLeft);
 	}
 }
 

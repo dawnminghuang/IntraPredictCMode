@@ -17,8 +17,12 @@ public:
 	void initDstData();
 	void deinitDstData();
 	void predIntraAngAdi(DistanceData* distanMatri, int uiDirMode);
-	int  computeIntraPredAngle(int uiDirMode);
+	void predIntraPlanar(DistanceData* distanMatri, int uiDirMode);
+	void predIntraLumaAdi(DistanceData* distanMatri, int uiDirMode);
+	void predIntraChromaAdi(DistanceData* distanMatri, int uiDirMode);
 	void saveDistanceMatri(DistanceData* distanMatri, int i, int j, int ref_main_index, int ref_side_index);
+	int predIntraGetPredValDC(const int* pSrc, int iSrcStride, int iWidth, int iHeight);
+	int computeIntraPredAngle(int uiDirMode);
 
 public:
 	bool is_mod_ver;

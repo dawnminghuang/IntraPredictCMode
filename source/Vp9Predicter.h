@@ -13,6 +13,8 @@ public:
 	~Vp9Predicter();
 	void predict();
 	void predIntraAngAdi(DistanceData* distanMatri, int uiDirMode);
+	void predIntraLumaAdi(DistanceData* distanMatri, int uiDirMode);
+	void predIntraChromaAdi(DistanceData* distanMatri, int uiDirMode);
 	void initVp9Matri(int width, int height, int distanceSize);
 	void deinitVp9Matri();
 	void saveVp9Matri(int ** vp9Matri, int index, int iYnN1, int iY, int iYn, int iYnP2, int predictData);

@@ -14,6 +14,7 @@ public:
 	void predict();
 	void predPixelIndex(int j, int i);
 	void predPixel(int j, int i);
+	void predPixelBi(int j ,int i);
 	void initDstData();
 	void deinitDstData();
 	void generateRefer();
@@ -26,13 +27,21 @@ public:
 	void firstGroupCopySrc(int* dst, int *src);
 	void secondGroupProcess();
 	void secondGroupCopySrc(int* dst, int *src);
-	void group256(int index);
-	void group128(int left, int right, int index);
-	void group64(int left, int right, int index);
-	void group32(int left, int right, int index);
-	void group16(int left, int right, int index);
 	int convertSrcIndex2RefIndex(int index);
 	int convertSrcIndex2LineRefIndex(int index);
+	int  biConvertSrcLeftIndex2LineRefIndex(int index);
+	int  biConvertSrcAboveIndex2LineRefIndex(int index);
+	void initTopLeftRefer(int j, int i, int x_offset, int y_offset);
+	void initTopLeft();
+	int predIntraGetPredValDC(const int* pSrc, int iSrcStride, int iWidth, int iHeight);
+	void predIntraPlanar(DistanceData* distanMatri, int uiDirMode);
+	void predIntraLumaAdi(DistanceData* distanMatri, int uiDirMode);
+	void predIntraChromaAdi(DistanceData* distanMatri, int uiDirMode);
+	void predIntraDC(DistanceData* distanMatri, int uiDirMode);
+	void predPixelIndexBi(int j, int i);
+	void biFirstGroupProcess();
+	void biFirstGroupCopySrc(int* dst, int *src);
+	void generateBiRefer();
 public:
 	bool is_mod_ver;
 	int intra_pred_angle_mode;
@@ -51,6 +60,24 @@ public:
 	int lineRefer[LINE_REFER_SIZE];
 	int refer4X4[MATRI_REFER_SIZE];
 	int lineRefer16[LINE16REFER];
+	int mode;
+
+	int biLeftFirstBouds[2];
+	int biLeftSecondBouds[2];
+	int biAboveFirstBouds[2];
+	int biAboveSecondBouds[2];
+	int lineRefer256[LINEREFER256];
+	int leftlineRefer4[LINEREFER4];
+	int leftlineRefer8[LINEREFER8];
+	int AbovelineRefer4[LINEREFER4];
+	int AbovelineRefer8[LINEREFER8];
+	int bottomLeft;
+	int topRight;
+	int leftColumn[MAX_CU_SIZE_HEVC + 1];
+	int topRow[MAX_CU_SIZE_HEVC + 1];
+	int bottomRow[MAX_CU_SIZE_HEVC]; 
+	int rightColumn[MAX_CU_SIZE_HEVC];
+
 };
 
 #endif

@@ -11,6 +11,11 @@ IntraPredicter::IntraPredicter() {
 	calc_mode = CALCU_MODE_MATRI;
 	memset(outPath, 0, MAX_PATH_LENGHT);
 	src_data = NULL;
+	extraType = EXTRACT_BOUND_4;
+	groupType = GROUD_TYPE_MIN;
+	bi_left_min = 0;
+	bi_above_min = 0;
+	bi_above_max = 0;
 }
 
 void IntraPredicter::predict(){
@@ -186,6 +191,143 @@ void IntraPredicter::initIndexMatri(int maxIndexNumber, int distanceSize) {
 		max_min_indexs[i] = new int[distanceSize]();
 	}
 }
+
+void IntraPredicter::group256(int index) {
+	int left128 = 0;
+	int right128 = 0;
+	int boud128 = MAX_INDEX / 2;
+	if (index <= boud128) {
+		left128 = 0;
+		right128 = boud128;
+	}
+	else {
+		left128 = boud128 + 1;
+		right128 = MAX_INDEX;
+	}
+	if (extraType == EXTRACT_BOUND_128) {
+		extractBouds(left128, right128);
+	}
+	else {
+		group128(left128, right128, index);
+	}
+}
+
+void IntraPredicter::group128(int left, int right, int index) {
+	int left64 = 0;
+	int right64 = 0;
+	int boud64 = left + (right - left) / 2;
+	if (index <= boud64) {
+		left64 = left;
+		right64 = boud64;
+	}
+	else {
+		left64 = boud64 + 1;
+		right64 = right;
+	}
+	if (extraType == EXTRACT_BOUND_64) {
+		extractBouds(left64, right64);
+	}
+	else {
+		group64(left64, right64, index);
+	}
+}
+
+void IntraPredicter::group64(int left, int right, int index) {
+	int left32 = 0;
+	int right32 = 0;
+	int boud32 = left + (right - left) / 2;
+	if (index <= boud32) {
+		left32 = left;
+		right32 = boud32;
+	}
+	else {
+		left32 = boud32 + 1;
+		right32 = right;
+	}
+	if (extraType == EXTRACT_BOUND_32) {
+		extractBouds(left32, right32);
+	}
+	else {
+		group32(left32, right32, index);
+	}
+}
+
+void IntraPredicter::group32(int left, int right, int index) {
+	int left16 = 0;
+	int right16 = 0;
+	int boud16 = left + (right - left) / 2;
+	if (index <= boud16) {
+		left16 = left;
+		right16 = boud16;
+	}
+	else {
+		left16 = boud16 + 1;
+		right16 = right;
+	}
+	if (extraType == EXTRACT_BOUND_16) {
+		extractBouds(left16, right16);
+	}else {
+		group16(left16, right16, index);
+	}
+
+}
+
+void IntraPredicter::group16(int left, int right, int index) {
+	int left8 = 0;
+	int right8 = 0;
+	int boud8 = left + (right - left) / 2;
+	if (index <= boud8) {
+		left8 = left;
+		right8 = boud8;
+	}else {
+		left8 = boud8 + 1;
+		right8 = right;
+	}
+
+	if (extraType == EXTRACT_BOUND_8) {
+		extractBouds(left8, right8);
+	}else {
+		group8(left8, right8, index);
+	}
+}
+
+void IntraPredicter::group8(int left, int right, int index) {
+	int left4 = 0;
+	int right4 = 0;
+	int bounds[2] = { 0 };
+	int boud4 = left + (right - left) / 2;
+	if (index <= boud4) {
+		left4 = left;
+		right4 = boud4;
+	}
+	else {
+		left4 = boud4 + 1;
+		right4 = right;
+	}
+	if(extraType == EXTRACT_BOUND_4){
+	    extractBouds(left4, right4);
+	}
+
+}
+void IntraPredicter::extractBouds(int left, int right) {
+	if (groupType == GROUD_TYPE_MIN) {
+		minBounds[0] = left;
+		minBounds[1] = right;
+	}
+	else {
+		maxBounds[0] = left;
+		maxBounds[1] = right;
+	}
+}
+
+void IntraPredicter::initLog2size() {
+	memset(g_log2size, -1, MAX_CU_SIZE_AVS2 + 1);
+	int c = 2;
+	for (int k = 4; k <= MAX_CU_SIZE_AVS2; k *= 2) {
+		g_log2size[k] = c;
+		c++;
+	}
+}
 void IntraPredicter::deinitIndexMatri(int maxIndexNumber) {
 	if (max_min_indexs) {
 		for (int i = 0; i < maxIndexNumber; i++) {
@@ -195,6 +337,7 @@ void IntraPredicter::deinitIndexMatri(int maxIndexNumber) {
 		max_min_indexs = NULL;
 	}
 }
+
 IntraPredicter::~IntraPredicter() {
 	if (distanceCalculator)
 		delete distanceCalculator;

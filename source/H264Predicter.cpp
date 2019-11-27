@@ -14,7 +14,7 @@ H264Predicter::~H264Predicter() {
 }
 
 void H264Predicter::predict() {
-	int mode_max_index = NUM_INTRA_PMODE_264 + START_INDEX_264;
+	int mode_max_index = NUM_INTRA_PMODE_264;
 	int max_cu_size = 64;
 	generateOutPath(H264_PATH, calc_mode);
 	generateDigOutPath(H264_PATH, calc_mode);
@@ -26,23 +26,42 @@ void H264Predicter::predict() {
 		outPutWriter->initDigPostionInfoFp(digOutPath, uiDirMode);
 		distanceCalculator->setPredictMode(uiDirMode);
 		for (int j = 0; j < NUM_CU_SIZE_264; j++) {
-			int iWidth = g_cu_size_264[j][0];
-			int iHeight = g_cu_size_264[j][1];
-			tu_width = iWidth;
-			tu_height = iHeight;
-			initDstData();
-			DistanceData* distanMatri = new DistanceData(iWidth, iHeight, NUM_DISTANCE_SIZE_264);
-			predIntraAngAdi(distanMatri, uiDirMode);
-			distanceCalculator->calcuDistance(distanMatri);
-			outPutWriter->writeModeInfoToFile(distanMatri);
-			outPutWriter->writeDstDataToFile(h264_dst, iWidth, iHeight);
-			deinitDstData();
-			delete distanMatri;
+			for (int k = 0; k < NUM_COLOR_SPACE_SIZE; k++) {
+				if (k == COLOR_SPACE_LUMA) {
+					int iWidth = g_cu_size_264[j][0];
+					int iHeight = g_cu_size_264[j][1];
+					tu_width = iWidth;
+					tu_height = iHeight;
+					initDstData();
+					DistanceData* distanMatri = new DistanceData(tu_width, tu_height, NUM_DISTANCE_SIZE_264);
+					predIntraLumaAdi(distanMatri, uiDirMode);
+					outPutWriter->writeModeInfoToFile(distanMatri);
+					distanceCalculator->calcuDistance(distanMatri);
+					outPutWriter->writeDstDataToFile(h264_dst, tu_width, tu_height);
+					deinitDstData();
+					delete distanMatri;
+				}
+				else {
+					int iWidth = g_cu_size_264[j][0]/2;
+					int iHeight = g_cu_size_264[j][1]/2;
+					tu_width = iWidth;
+					tu_height = iHeight;
+					initDstData();
+					DistanceData* distanMatri = new DistanceData(tu_width, tu_height, NUM_DISTANCE_SIZE_264);
+					predIntraChromaAdi(distanMatri, uiDirMode);
+					outPutWriter->writeDstDataToFile(h264_dst, tu_width, tu_height);
+					deinitDstData();
+					delete distanMatri;
+
+				}
+			}
 		}
 	}
 	writeMaxDistanceToFile(calc_mode);
 }
-
+void H264Predicter::predIntraLumaAdi(DistanceData* distanMatri, int uiDirMode) {
+	predIntraAngAdi(distanMatri, uiDirMode);
+}
 void H264Predicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 	int iWidth = distanMatri->tu_width;
 	int iHeight = distanMatri->tu_height;
@@ -53,6 +72,35 @@ void H264Predicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 	int *refLeft = Left + 1;
 	int iXnN1, iX, iXn, iXnP2;
 	if ((iWidth == 4) && (iHeight == 4)) {
+		if (uiDirMode == 0) {
+			for (int j = 0; j < iHeight; j++) {
+				for (int i = 0; i < iWidth; i++) {
+					h264_dst[j][i] = refAbove[i];
+				}
+			}
+		}
+		if (uiDirMode == 1) {
+			for (int j = 0; j < iHeight; j++) {
+				for (int i = 0; i < iWidth; i++) {
+					h264_dst[j][i] = refLeft[i];
+				}
+			}
+		}
+		if (uiDirMode == 2) {
+			int  sumPixel = 0;			
+				for (int i = 0; i < iWidth; i++) {
+					sumPixel += refAbove[i];
+				}
+				for (int j = 0; j < iHeight; j++) {
+					sumPixel += refLeft[j];
+			    }
+				for (int j = 0; j < iHeight; j++) {
+					for (int i = 0; i < iWidth; i++) {
+						h264_dst[j][i] = (sumPixel + 4) >> 3;
+					}
+				}
+
+		}
 		if (uiDirMode == 3) {
 			for (int j = 0; j < iHeight; j++) {
 				for (int i = 0; i < iWidth; i++) {
@@ -247,6 +295,35 @@ void H264Predicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 		}
 	}
 	if (iHeight == 8 && iWidth == 8) {
+		if (uiDirMode == 0) {
+			for (int j = 0; j < iHeight; j++) {
+				for (int i = 0; i < iWidth; i++) {
+					h264_dst[j][i] = refAbove[i];
+				}
+			}
+		}
+		if (uiDirMode == 1) {
+			for (int j = 0; j < iHeight; j++) {
+				for (int i = 0; i < iWidth; i++) {
+					h264_dst[j][i] = refLeft[i];
+				}
+			}
+		}
+		if (uiDirMode == 2) {
+			int  sumPixel = 0;
+			for (int i = 0; i < iWidth; i++) {
+				sumPixel += refAbove[i];
+			}
+			for (int j = 0; j < iHeight; j++) {
+				sumPixel += refLeft[j];
+			}
+			for (int j = 0; j < iHeight; j++) {
+				for (int i = 0; i < iWidth; i++) {
+					h264_dst[j][i] = (sumPixel + 8) >> 4;
+				}
+			}
+
+		}
 		if (uiDirMode == 3) {
 			for (int j = 0; j < iHeight; j++) {
 				for (int i = 0; i < iWidth; i++) {
@@ -435,8 +512,140 @@ void H264Predicter::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
 			}
 		}
 	}
+	if (iHeight == 16 && iWidth == 16) {
+		if (uiDirMode == 0) {
+			for (int j = 0; j < iHeight; j++) {
+				for (int i = 0; i < iWidth; i++) {
+					h264_dst[j][i] = refAbove[i];
+				}
+			}
+		}
+		if (uiDirMode == 1) {
+			for (int j = 0; j < iHeight; j++) {
+				for (int i = 0; i < iWidth; i++) {
+					h264_dst[j][i] = refLeft[i];
+				}
+			}
+		}
+		if (uiDirMode == 2) {
+			int  sumPixel = 0;
+			for (int i = 0; i < iWidth; i++) {
+				sumPixel += refAbove[i];
+			}
+			for (int j = 0; j < iHeight; j++) {
+				sumPixel += refLeft[j];
+			}
+			for (int j = 0; j < iHeight; j++) {
+				for (int i = 0; i < iWidth; i++) {
+					h264_dst[j][i] = (sumPixel + 16) >> 5;
+				}
+			}
+
+		}
+		if (uiDirMode == 3) {
+			int  H = 0;
+			int  V = 0;
+			int a, b, c;
+			for (int i = 0; i < iWidth/2; i++) {
+				H +=(i+1)*(refAbove[8+i] - refAbove[6-i]);
+			}
+			for (int j = 0; j < iHeight/2; j++) {
+				V += (j+1)*refLeft[8+j]-refLeft[6-j];
+			}
+			a = 16 * (refAbove[iWidth - 1] + refLeft[iHeight - 1]);
+		    b = (5 * H + 32) >> 6;
+			c = (5 * V + 32) >> 6;
+			for (int j = 0; j < iHeight; j++) {
+				for (int i = 0; i < iWidth; i++) {
+					int x = (a + b * (i - 7) + c * (j - 7) + 16) >> 5;
+					int height = 255;
+					h264_dst[j][i] = iClip1(height, x);
+				}
+			}
+
+		}
+	}
 }
 
+void H264Predicter::predIntraChromaAdi(DistanceData* distanMatri, int uiDirMode) {
+	int iWidth = distanMatri->tu_width;
+	int iHeight = distanMatri->tu_height;
+	int  Above[2 * MAX_CU_SIZE_H264 + 1];
+	int  Left[MAX_CU_SIZE_H264 + 1];
+	convertSrc(Above, Left);
+	int *refAbove = Above + 1;
+	int *refLeft = Left + 1;
+	int iXnN1, iX, iXn, iXnP2;
+	if (((iWidth == 4) && (iHeight == 4)) || ((iWidth == 8) && (iHeight == 8))) {
+		if (uiDirMode == 0) {
+			int  sumPixel = 0;
+			for (int i = 0; i < iWidth; i++) {
+				sumPixel += refAbove[i];
+			}
+			for (int j = 0; j < iHeight; j++) {
+				sumPixel += refLeft[j];
+			}
+			for (int j = 0; j < iHeight; j++) {
+				for (int i = 0; i < iWidth; i++) {
+					if ((iWidth == 8) && (iHeight == 8)) {
+						h264_dst[j][i] = (sumPixel + 8) >> 4;
+					}else{
+						h264_dst[j][i] = (sumPixel + 4) >> 3;
+					}
+				}
+			}
+
+		}
+		if (uiDirMode == 1) {
+			for (int j = 0; j < iHeight; j++) {
+				for (int i = 0; i < iWidth; i++) {
+					h264_dst[j][i] = refAbove[i];
+				}
+			}
+		}
+		if (uiDirMode == 3) {
+			for (int j = 0; j < iHeight; j++) {
+				for (int i = 0; i < iWidth; i++) {
+					h264_dst[j][i] = refLeft[i];
+				}
+			}
+		}
+		if (uiDirMode == 3) {
+			int ih, iv, ib, ic, iaa;
+			int i, j;
+			int cr_MB_x = iWidth;
+			int cr_MB_y = iHeight;
+			int cr_MB_y2 = (cr_MB_y >> 1);
+			int cr_MB_x2 = (cr_MB_x >> 1);
+
+			//imgpel **predU1 = &imgUV[pos_y1];
+
+			ih = cr_MB_x2 * (refAbove[cr_MB_x - 1] - refLeft[-1]);
+
+			for (i = 0; i < cr_MB_x2 - 1; ++i)
+				ih += (i + 1) * (refAbove[cr_MB_x2 + i] - refAbove[cr_MB_x2 - 2 - i]);
+
+			iv = cr_MB_y2 * (refLeft[cr_MB_y - 1] - refLeft[-1]);
+
+			for (i = 0; i < cr_MB_y2 - 1; ++i)
+			{
+				iv += (i + 1)*((refLeft[cr_MB_y2 + i] - refLeft[cr_MB_y2 - 2 - i]));
+			}
+
+			ib = ((cr_MB_x == 8 ? 17 : 5) * ih + 2 * cr_MB_x) >> (cr_MB_x == 8 ? 5 : 6);
+			ic = ((cr_MB_y == 8 ? 17 : 5) * iv + 2 * cr_MB_y) >> (cr_MB_y == 8 ? 5 : 6);
+
+			iaa = ((refAbove[cr_MB_x - 1] + refLeft[cr_MB_y - 1]) << 4);
+
+			for (j = 0; j < cr_MB_y; ++j)
+			{
+				int plane = iaa + (j - cr_MB_y2 + 1) * ic + 16 - (cr_MB_x2 - 1) * ib;
+				for (i = 0; i < cr_MB_x; ++i)
+					h264_dst[j][i] = iClip1(MAX_PIXEL_VALUE, ((i * ib + plane) >> 5));
+			}
+		}
+	}
+}
 void H264Predicter::convertSrc(int* above, int *left) {
 	if ((src_data && src_data->h264_src)) {
 		int src_stride = MAX_CU_SIZE_H264 * NUM_EXTEND_SIZE_H264 + 1;

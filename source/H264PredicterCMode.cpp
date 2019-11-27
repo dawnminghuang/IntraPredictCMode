@@ -15,28 +15,98 @@ H264PredicterCMode::~H264PredicterCMode() {
 }
 
 void H264PredicterCMode::predict() {
-	int mode_max_index = NUM_INTRA_PMODE_264 + START_INDEX_264;
+	int mode_max_index = NUM_INTRA_PMODE_264;
 	int max_cu_size = 64;
 	generateOutPath(H264_PATH, calc_mode);
 	for (int i = 0; i < NUM_INTRA_PMODE_264; i++) {
 		int uiDirMode = g_prdict_mode_264[i];
 		outPutWriter->initDstDataFp(H264_DATA_PATH_CMODE, uiDirMode);
 		for (int j = 0; j < NUM_CU_SIZE_264; j++) {
-			int iWidth = g_cu_size_264[j][0];
-			int iHeight = g_cu_size_264[j][1];
-			tu_width = iWidth;
-			tu_height = iHeight;
-			block_size = iWidth;
-			initDstData();
-			DistanceData* distanMatri = new DistanceData(iWidth, iHeight, NUM_DISTANCE_SIZE_264);
-			predIntraAngAdi(distanMatri, uiDirMode);
-			outPutWriter->writeDstDataToFile(h264_dst, iWidth, iHeight);
-			deinitDstData();
-			delete distanMatri;
+			for (int k = 0; k < NUM_COLOR_SPACE_SIZE; k++) {
+				if (k == COLOR_SPACE_LUMA) {
+					int iWidth = g_cu_size_264[j][0];
+					int iHeight = g_cu_size_264[j][1];
+					tu_width = iWidth;
+					tu_height = iHeight;
+					block_size = iWidth;
+					initDstData();
+					DistanceData* distanMatri = new DistanceData(iWidth, iHeight, NUM_DISTANCE_SIZE_264);
+					predIntraAngAdi(distanMatri, uiDirMode);
+					outPutWriter->writeDstDataToFile(h264_dst, iWidth, iHeight);
+					deinitDstData();
+					delete distanMatri;
+				}
+				else {
+					int iWidth = g_cu_size_264[j][0]/2;
+					int iHeight = g_cu_size_264[j][1]/2;
+					tu_width = iWidth;
+					tu_height = iHeight;
+					block_size = iWidth;
+					initDstData();
+					DistanceData* distanMatri = new DistanceData(iWidth, iHeight, NUM_DISTANCE_SIZE_264);
+					predIntraChromaAdi(distanMatri, uiDirMode);
+					outPutWriter->writeDstDataToFile(h264_dst, iWidth, iHeight);
+					deinitDstData();
+					delete distanMatri;
+				}
+			}
 		}
 	}
 }
+void H264PredicterCMode::intra4x4_dc_pred(int *refAbove, int *refLeft) {
+	int s0 = 0;
+	// form predictor pels
 
+	imgpel *curpel = NULL;
+	curpel = refAbove;
+	s0 += *curpel++;
+	s0 += *curpel++;
+	s0 += *curpel++;
+	s0 += *curpel;
+
+	curpel = refLeft;
+	s0 += *curpel++;
+	s0 += *curpel++;
+	s0 += *curpel++;
+	s0 += *curpel;
+
+	// no edge
+	s0 = (s0 + 4) >> 3;
+	int joff = 0;
+	int ioff = 0;
+	for (int j = joff; j < joff + block_size; ++j)
+	{
+		// store DC prediction
+		h264_dst[j][ioff] = (imgpel)s0;
+		h264_dst[j][ioff + 1] = (imgpel)s0;
+		h264_dst[j][ioff + 2] = (imgpel)s0;
+		h264_dst[j][ioff + 3] = (imgpel)s0;
+	}
+}
+
+void H264PredicterCMode::intra4x4_vert_pred(int *refAbove, int *refLeft) {
+	int joff = 0;
+	int ioff = 0;
+	int *imgY = refAbove;
+	memcpy(&(h264_dst[joff++][ioff]), imgY, block_size * sizeof(imgpel));
+	memcpy(&(h264_dst[joff++][ioff]), imgY, block_size * sizeof(imgpel));
+	memcpy(&(h264_dst[joff++][ioff]), imgY, block_size * sizeof(imgpel));
+	memcpy(&(h264_dst[joff][ioff]), imgY, block_size * sizeof(imgpel));
+}
+void H264PredicterCMode::intra4x4_hor_pred(int *refAbove, int *refLeft) {
+	int ioff = 0;
+	imgpel *predrow, prediction;
+	for (int j = 0; j < block_size; ++j)
+	{
+		predrow = h264_dst[j];
+		prediction = refLeft[j];
+		/* store predicted 4x4 block */
+		predrow[ioff] = prediction;
+		predrow[ioff + 1] = prediction;
+		predrow[ioff + 2] = prediction;
+		predrow[ioff + 3] = prediction;
+	}
+}
 void H264PredicterCMode::intra4x4_diag_down_right_pred(int *refAbove, int *refLeft) {
 
 	imgpel PredPixel[7];
@@ -229,6 +299,95 @@ void H264PredicterCMode::intra4x4_hor_down_pred(int *refAbove, int *refLeft) {
 }
 
 
+void H264PredicterCMode::intra8x8_dc_pred(int *refAbove, int *refLeft) {
+	imgpel PredArray[16];
+	imgpel PredPel[25];
+	imgpel *Pred = &PredArray[0];
+	// form predictor pels
+	int s0 = 0;
+	// P_A through P_H
+	memcpy(&PredPel[1], refAbove, block_size * sizeof(imgpel));
+	refAbove = refAbove + block_size;
+	// P_I through P_P
+	memcpy(&PredPel[9], refAbove, block_size * sizeof(imgpel));
+
+	// P_Q through P_X
+	memcpy(&PredPel[17], refLeft, block_size * sizeof(imgpel));
+	// P_Z
+	PredPel[0] = refLeft[-1];
+
+	s0 = (PP_A + PP_B + PP_C + PP_D + PP_E + PP_F + PP_G + PP_H + PP_Q + PP_R + PP_S + PP_T + PP_U + PP_V + PP_W + PP_X + 8) >> 4;
+
+	// no edge
+	int ioff = 0;
+	int joff = 0;
+	for (int i = ioff; i < ioff + BLOCK_SIZE_8x8; i++)
+		h264_dst[joff][i] = (imgpel)s0;
+
+	for (int j = joff + 1; j < joff + BLOCK_SIZE_8x8; j++)
+		memcpy(&h264_dst[j][ioff], &h264_dst[j - 1][ioff], BLOCK_SIZE_8x8 * sizeof(imgpel));
+}
+
+void H264PredicterCMode::intra8x8_vert_pred(int *refAbove, int *refLeft) {
+	imgpel PredArray[16];
+	imgpel PredPel[25];
+	imgpel *Pred = &PredArray[0];
+	// form predictor pels
+	int s0 = 0;
+	// P_A through P_H
+	memcpy(&PredPel[1], refAbove, block_size * sizeof(imgpel));
+	refAbove = refAbove + block_size;
+	// P_I through P_P
+	memcpy(&PredPel[9], refAbove, block_size * sizeof(imgpel));
+
+	// P_Q through P_X
+	memcpy(&PredPel[17], refLeft, block_size * sizeof(imgpel));
+	// P_Z
+	PredPel[0] = refLeft[-1];
+	int joff = 0;
+	int ioff = 0;
+	for (int i = joff; i < joff + BLOCK_SIZE_8x8; i++)
+	{
+		memcpy(&h264_dst[i][ioff], &PredPel[1], BLOCK_SIZE_8x8 * sizeof(imgpel));
+	}
+}
+void H264PredicterCMode::intra8x8_hor_pred(int *refAbove, int *refLeft) {
+	imgpel PredArray[16];
+	imgpel PredPel[25];
+	imgpel *Pred = &PredArray[0];
+	// form predictor pels
+	int s0 = 0;
+	// P_A through P_H
+	memcpy(&PredPel[1], refAbove, block_size * sizeof(imgpel));
+	refAbove = refAbove + block_size;
+	// P_I through P_P
+	memcpy(&PredPel[9], refAbove, block_size * sizeof(imgpel));
+
+	// P_Q through P_X
+	memcpy(&PredPel[17], refLeft, block_size * sizeof(imgpel));
+	// P_Z
+	PredPel[0] = refLeft[-1];
+	int ioff = 0;
+	int joff = 0;
+	int jpos;
+	int ipos0 = ioff, ipos1 = ioff + 1, ipos2 = ioff + 2, ipos3 = ioff + 3;
+	int ipos4 = ioff + 4, ipos5 = ioff + 5, ipos6 = ioff + 6, ipos7 = ioff + 7;
+
+	for (int j = 0; j < BLOCK_SIZE_8x8; j++)
+	{
+		jpos = j + joff;
+
+		h264_dst[jpos][ipos0] =
+		h264_dst[jpos][ipos1] =
+		h264_dst[jpos][ipos2] =
+		h264_dst[jpos][ipos3] =
+		h264_dst[jpos][ipos4] =
+		h264_dst[jpos][ipos5] =
+		h264_dst[jpos][ipos6] =
+		h264_dst[jpos][ipos7] = (imgpel)(&PP_Q)[j];
+
+	}
+}
 void H264PredicterCMode::intra8x8_diag_down_right_pred(int *refAbove, int *refLeft) {
 
 	imgpel PredArray[16];
@@ -557,9 +716,140 @@ void H264PredicterCMode::intra8x8_hor_down_pred(int *refAbove, int *refLeft) {
 	memcpy(&h264_dst[start_offy][start_offx], pred_pels, block_size * sizeof(imgpel));
 }
 
+void H264PredicterCMode::intra16x16_dc_pred(int *refAbove, int *refLeft) {
+	int s0 = 0;
+	int s1 = 0;
+	int s2 = 0;
+	// form predictor pels
+	int *pel = refAbove;
+	for (int i = 0; i < MB_BLOCK_SIZE; ++i)
+	{
+		s1 += *pel++;
+	}
+	pel = refLeft;
+	for (int i = 0; i < MB_BLOCK_SIZE; ++i)
+	{
+		s2 += *pel++;
+	}
+	// no edge
+	s0 = (s1 + s2 + 16) >> 5;       // no edge
+	int joff = 0;
+	int ioff = 0;
+	for (int j = 0; j < MB_BLOCK_SIZE; ++j)
+	{
+		for (int i = 0; i < MB_BLOCK_SIZE; i += 4)
+		{
+			h264_dst[j][i] = (imgpel)s0;
+			h264_dst[j][i + 1] = (imgpel)s0;
+			h264_dst[j][i + 2] = (imgpel)s0;
+			h264_dst[j][i + 3] = (imgpel)s0;
+		}
+	}
+}
+
+void H264PredicterCMode::intra16x16_vert_pred(int *refAbove, int *refLeft) {
+	int joff = 0;
+	int ioff = 0;
+	int *src = refAbove;
+	int **dst = h264_dst;
+	for (int j = 0; j < MB_BLOCK_SIZE; j += 4)
+	{
+		memcpy(*dst++, src, MB_BLOCK_SIZE * sizeof(imgpel));
+		memcpy(*dst++, src, MB_BLOCK_SIZE * sizeof(imgpel));
+		memcpy(*dst++, src, MB_BLOCK_SIZE * sizeof(imgpel));
+		memcpy(*dst++, src, MB_BLOCK_SIZE * sizeof(imgpel));
+	}
+}
+void H264PredicterCMode::intra16x16_hor_pred(int *refAbove, int *refLeft) {
+	int prediction;
+	int pos_y = 0;
+	for (int j = 0; j < MB_BLOCK_SIZE; ++j)
+	{
+		int i;
+		imgpel *prd = h264_dst[j];
+		prediction = refLeft[pos_y++];
+
+		for (i = 0; i < MB_BLOCK_SIZE; i += 4)
+		{
+			*prd++ = prediction; // store predicted 16x16 block
+			*prd++ = prediction; // store predicted 16x16 block
+			*prd++ = prediction; // store predicted 16x16 block
+			*prd++ = prediction; // store predicted 16x16 block
+		}
+
+	}
+}
+void H264PredicterCMode::intra16x16_plane_pred(int *refAbove, int *refLeft) {
+	int i, j;
+
+	int ih = 0, iv = 0;
+	int ib, ic, iaa;
+	int *mpr_line = refAbove + 7;
+
+	int *imgY = refLeft + 7;
+	for (int i = 1; i < 8; ++i)
+	{
+		ih += i * (mpr_line[i] - mpr_line[-i]);
+		iv += i * (imgY[i]- imgY[-i]);
+	}
+
+	ih += 8 * (mpr_line[8] - refLeft[-1]);
+	iv += 8 * (imgY[8] - refLeft[-1]);
+
+	ib = (5 * ih + 32) >> 6;
+	ic = (5 * iv + 32) >> 6;
+	iaa = 16 * (mpr_line[8] + imgY[8]);
+	for (j = 0; j < MB_BLOCK_SIZE; ++j)
+	{
+		int ibb = iaa + (j - 7) * ic + 16;
+		imgpel *prd = h264_dst[j];
+		for (i = 0; i < MB_BLOCK_SIZE; i += 4)
+		{
+			*prd++ = (imgpel)iClip1(MAX_PIXEL_VALUE, ((ibb + (i - 7) * ib) >> 5));
+			*prd++ = (imgpel)iClip1(MAX_PIXEL_VALUE, ((ibb + (i - 6) * ib) >> 5));
+			*prd++ = (imgpel)iClip1(MAX_PIXEL_VALUE, ((ibb + (i - 5) * ib) >> 5));
+			*prd++ = (imgpel)iClip1(MAX_PIXEL_VALUE, ((ibb + (i - 4) * ib) >> 5));
+		}
+	}// store plane prediction
+}
+void H264PredicterCMode::intrapred_chroma_plane(int *refAbove, int *refLeft) {
+	int ih, iv, ib, ic, iaa;
+	int i, j;
+	int cr_MB_x =tu_width;
+	int cr_MB_y = tu_height;
+	int cr_MB_y2 = (cr_MB_y >> 1);
+	int cr_MB_x2 = (cr_MB_x >> 1);
+
+	//imgpel **predU1 = &imgUV[pos_y1];
+
+	ih = cr_MB_x2 * (refAbove[cr_MB_x - 1] - refLeft[-1]);
+
+	for (i = 0; i < cr_MB_x2 - 1; ++i)
+		ih += (i + 1) * (refAbove[cr_MB_x2 + i] - refAbove[cr_MB_x2 - 2 - i]);
+
+	iv = cr_MB_y2 * (refLeft[cr_MB_y - 1] - refLeft[-1]);
+
+	for (i = 0; i < cr_MB_y2 - 1; ++i)
+	{
+		iv += (i + 1)*((refLeft[cr_MB_y2 + i] - refLeft[cr_MB_y2 - 2 - i]));
+	}
+
+	ib = ((cr_MB_x == 8 ? 17 : 5) * ih + 2 * cr_MB_x) >> (cr_MB_x == 8 ? 5 : 6);
+	ic = ((cr_MB_y == 8 ? 17 : 5) * iv + 2 * cr_MB_y) >> (cr_MB_y == 8 ? 5 : 6);
+
+	iaa = ((refAbove[cr_MB_x - 1] + refLeft[cr_MB_y - 1]) << 4);
+
+	for (j = 0; j < cr_MB_y; ++j)
+	{
+		int plane = iaa + (j - cr_MB_y2 + 1) * ic + 16 - (cr_MB_x2 - 1) * ib;
+		for (i = 0; i < cr_MB_x; ++i)
+			h264_dst[j][i] = (imgpel)iClip1(MAX_PIXEL_VALUE, ((i * ib + plane) >> 5));
+	}
+
+}
 void H264PredicterCMode::predIntraAngAdi(DistanceData* distanMatri, int uiDirMode) {
-	int iWidth = distanMatri->tu_width;
-	int iHeight = distanMatri->tu_height;
+	iWidth = distanMatri->tu_width;
+    iHeight = distanMatri->tu_height;
 	int  Above[2 * MAX_CU_SIZE_H264];
 	int  Left[MAX_CU_SIZE_H264 + 1];
 	convertSrc(Above, Left);
@@ -567,6 +857,15 @@ void H264PredicterCMode::predIntraAngAdi(DistanceData* distanMatri, int uiDirMod
 	int *refLeft = Left + 1;
 	if (iWidth == 4 && iHeight == 4) {
 		switch (uiDirMode) {
+		case DC_PRED:
+			return (intra4x4_dc_pred(refAbove, refLeft));
+			break;
+		case VERT_PRED:
+			return (intra4x4_vert_pred(refAbove, refLeft));
+			break;
+		case HOR_PRED:
+			return (intra4x4_hor_pred(refAbove, refLeft));
+			break;
 		case DIAG_DOWN_RIGHT_PRED:
 			intra4x4_diag_down_right_pred(refAbove, refLeft);
 			break;
@@ -586,13 +885,22 @@ void H264PredicterCMode::predIntraAngAdi(DistanceData* distanMatri, int uiDirMod
 			intra4x4_hor_down_pred(refAbove, refLeft);
 			break;
 		default:
-			printf("Error: illegal intra_4x4 prediction mode: %d\n", (int)uiDirMode);
+			//printf("Error: illegal intra_4x4 prediction mode: %d\n", (int)uiDirMode);
 			break;
 		}
 	}
 
 	if (iWidth == 8 && iHeight == 8) {
 		switch (uiDirMode) {
+		case DC_PRED:
+			return (intra8x8_dc_pred(refAbove, refLeft));
+			break;
+		case VERT_PRED:
+			return (intra8x8_vert_pred(refAbove, refLeft));
+			break;
+		case HOR_PRED:
+			return (intra8x8_hor_pred(refAbove, refLeft));
+			break;
 		case DIAG_DOWN_RIGHT_PRED:
 			intra8x8_diag_down_right_pred(refAbove, refLeft);
 			break;
@@ -612,12 +920,77 @@ void H264PredicterCMode::predIntraAngAdi(DistanceData* distanMatri, int uiDirMod
 			intra8x8_hor_down_pred(refAbove, refLeft);
 			break;
 		default:
-			printf("Error: illegal intra_8x8 prediction mode: %d\n", (int)uiDirMode);
+			//printf("Error: illegal intra_8x8 prediction mode: %d\n", (int)uiDirMode);
+			break;
+		}
+	}
+    if (iWidth == 16 && iHeight == 16) {
+			switch (uiDirMode) {
+			case DC_PRED:
+				return (intra16x16_dc_pred(refAbove, refLeft));
+				break;
+			case VERT_PRED:
+				return (intra16x16_vert_pred(refAbove, refLeft));
+				break;
+			case HOR_PRED:
+				return (intra16x16_hor_pred(refAbove, refLeft));
+				break;
+			case PLANE_16:
+				return intra16x16_plane_pred(refAbove, refLeft);
+				break;
+			}
+	    }
+}
+
+void H264PredicterCMode::predIntraLumaAdi(DistanceData* distanMatri, int uiDirMode) {
+	predIntraAngAdi(distanMatri, uiDirMode);
+}
+
+void H264PredicterCMode::predIntraChromaAdi(DistanceData* distanMatri, int uiDirMode) {
+	int iWidth = distanMatri->tu_width;
+	int iHeight = distanMatri->tu_height;
+	int  Above[2 * MAX_CU_SIZE_H264];
+	int  Left[MAX_CU_SIZE_H264 + 1];
+	convertSrc(Above, Left);
+	int *refAbove = Above;
+	int *refLeft = Left + 1;
+	if (iWidth == 4 && iHeight == 4) {
+		switch (uiDirMode) {
+		case DC_PRED_CHROMA:
+			return (intra4x4_dc_pred(refAbove, refLeft));
+			break;
+		case VERT_PRED_CHROMA:
+			return (intra4x4_vert_pred(refAbove, refLeft));
+			break;
+		case HOR_PRED_CHROMA:
+			return (intra4x4_hor_pred(refAbove, refLeft));
+			break;
+		case PLANE_PRED_CHROMA:
+			intrapred_chroma_plane(refAbove, refLeft);
+			break;
+		default:
+			//printf("Error: illegal intra_4x4 prediction mode: %d\n", (int)uiDirMode);
+			break;
+		}
+	}
+
+	if (iWidth == 8 && iHeight == 8) {
+		switch (uiDirMode) {
+		case DC_PRED_CHROMA:
+			return (intra8x8_dc_pred(refAbove, refLeft));
+			break;
+		case VERT_PRED_CHROMA:
+			return (intra8x8_vert_pred(refAbove, refLeft));
+			break;
+		case HOR_PRED_CHROMA:
+			return (intra8x8_hor_pred(refAbove, refLeft));
+			break;
+		case PLANE_PRED_CHROMA:
+			intrapred_chroma_plane(refAbove, refLeft);
 			break;
 		}
 	}
 }
-
 void H264PredicterCMode::convertSrc(int* above, int *left) {
 	if ((src_data && src_data->h264_src)) {
 		int *h264_src_ptr = src_data->h264_src + 1;

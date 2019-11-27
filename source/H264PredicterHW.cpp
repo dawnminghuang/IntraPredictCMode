@@ -14,7 +14,7 @@ H264PredicterHW::~H264PredicterHW() {
 }
 
 void H264PredicterHW::predict() {
-	int mode_max_index = NUM_INTRA_PMODE_264 + START_INDEX_264;
+	int mode_max_index = NUM_INTRA_PMODE_264;
 	int max_cu_size = 64;
 	generateOutPath(H264_PATH, calc_mode);
 	generateDigOutPath(H264_PATH, calc_mode);
@@ -42,7 +42,143 @@ void H264PredicterHW::predict() {
 	}
 	writeMaxDistanceToFile(calc_mode);
 }
+void H264PredicterHW::predIntraLumaAdi(DistanceData* distanMatri, int uiDirMode) {
+	if ((uiDirMode == PLANE_16) && (tu_width == 16 && tu_height == 16)) {
+		predIntraPlane(distanMatri, uiDirMode);
+	}
+	else if (uiDirMode == MODE_DC_H264) {
+		predIntraDC(distanMatri, uiDirMode);
+	}
+	else {
+		predIntraAngAdi(distanMatri, uiDirMode);
+	}
+}
+void H264PredicterHW::predIntraChromaAdi(DistanceData* distanMatri, int uiDirMode) {
+	int iWidth = distanMatri->tu_width;
+	int iHeight = distanMatri->tu_height;
+	int  Above[2 * MAX_CU_SIZE_H264 + 1];
+	int  Left[MAX_CU_SIZE_H264 + 1];
+	convertSrc(Above, Left);
+	int *refAbove = Above + 1;
+	int *refLeft = Left + 1;
+	int iXnN1, iX, iXn, iXnP2;
+	if (((iWidth == 4) && (iHeight == 4)) || ((iWidth == 8) && (iHeight == 8))) {
+		if (uiDirMode == 0) {
+			int lumaMode = 2;
+			predIntraDC(distanMatri, lumaMode);
+		}
+		if (uiDirMode == 1) {
+			int lumaMode = 0;
+			predIntraAngAdi(distanMatri, lumaMode);
+		}
+		if (uiDirMode == 2) {
+			int lumaMode = 1;
+			predIntraAngAdi(distanMatri, lumaMode);
+		}
+		if (uiDirMode == 3) {
+			int ih, iv, ib, ic, iaa;
+			int i, j;
+			int cr_MB_x = iWidth;
+			int cr_MB_y = iHeight;
+			int cr_MB_y2 = (cr_MB_y >> 1);
+			int cr_MB_x2 = (cr_MB_x >> 1);
 
+			//imgpel **predU1 = &imgUV[pos_y1];
+
+			ih = cr_MB_x2 * (refAbove[cr_MB_x - 1] - refLeft[-1]);
+
+			for (i = 0; i < cr_MB_x2 - 1; ++i)
+				ih += (i + 1) * (refAbove[cr_MB_x2 + i] - refAbove[cr_MB_x2 - 2 - i]);
+
+			iv = cr_MB_y2 * (refLeft[cr_MB_y - 1] - refLeft[-1]);
+
+			for (i = 0; i < cr_MB_y2 - 1; ++i)
+			{
+				iv += (i + 1)*((refLeft[cr_MB_y2 + i] - refLeft[cr_MB_y2 - 2 - i]));
+			}
+
+			ib = ((cr_MB_x == 8 ? 17 : 5) * ih + 2 * cr_MB_x) >> (cr_MB_x == 8 ? 5 : 6);
+			ic = ((cr_MB_y == 8 ? 17 : 5) * iv + 2 * cr_MB_y) >> (cr_MB_y == 8 ? 5 : 6);
+
+			iaa = ((refAbove[cr_MB_x - 1] + refLeft[cr_MB_y - 1]) << 4);
+
+			for (j = 0; j < cr_MB_y; ++j)
+			{
+				int plane = iaa + (j - cr_MB_y2 + 1) * ic + 16 - (cr_MB_x2 - 1) * ib;
+				for (i = 0; i < cr_MB_x; ++i)
+					h264_dst[j][i] = iClip1(MAX_PIXEL_VALUE, ((i * ib + plane) >> 5));
+			}
+		}
+	}
+}
+
+void H264PredicterHW::predIntraDC(DistanceData* distanMatri, int mode) {
+	int iWidth = distanMatri->tu_width;
+	int iHeight = distanMatri->tu_height;
+	int  Above[2 * MAX_CU_SIZE_H264 + 1];
+	int  Left[MAX_CU_SIZE_H264 + 1];
+	convertSrc(Above, Left);
+	int *refAbove = Above + 1;
+	int *refLeft = Left + 1;
+
+	if (mode == 2) {
+		int  sumPixel = 0;
+		for (int i = 0; i < iWidth; i++) {
+			sumPixel += refAbove[i];
+		}
+		for (int j = 0; j < iHeight; j++) {
+			sumPixel += refLeft[j];
+		}
+		for (int j = 0; j < iHeight; j++) {
+			for (int i = 0; i < iWidth; i++) {
+				if((iWidth == 4) && (iHeight == 4)){
+					h264_dst[j][i] = (sumPixel + 4) >> 3;
+				}
+				else if ((iWidth == 8) && (iHeight == 8)) {
+					h264_dst[j][i] = (sumPixel + 8) >> 4;
+				}
+				else if ((iWidth == 16) && (iHeight == 16)) {
+					h264_dst[j][i] = (sumPixel + 16) >> 5;;
+				}
+			}
+		}
+
+	}
+
+}
+
+void H264PredicterHW::predIntraPlane(DistanceData* distanMatri, int mode) {
+	int iWidth = distanMatri->tu_width;
+	int iHeight = distanMatri->tu_height;
+	int  Above[2 * MAX_CU_SIZE_H264 + 1];
+	int  Left[MAX_CU_SIZE_H264 + 1];
+	convertSrc(Above, Left);
+	int *refAbove = Above + 1;
+	int *refLeft = Left + 1;
+
+	if (uiDirMode == 3) {
+		int  H = 0;
+		int  V = 0;
+		int a, b, c;
+		for (int i = 0; i < iWidth / 2; i++) {
+			H += (i + 1)*(refAbove[8 + i] - refAbove[6 - i]);
+		}
+		for (int j = 0; j < iHeight / 2; j++) {
+			V += (j + 1)*(refLeft[8 + j] - refLeft[6 - j]);
+		}
+
+		a = 16 * (refAbove[iWidth - 1] + refLeft[iHeight - 1]);
+		b = (5 * H + 32) >> 6;
+		c = (5 * V + 32) >> 6;
+		for (int j = 0; j < iHeight; j++) {
+			for (int i = 0; i < iWidth; i++) {
+				int x = (a + b * (i - 7) + c * (j - 7) + 16) >> 5;
+				int height = 255;
+				h264_dst[j][i] = iClip1(height, x);
+			}
+		}
+	}
+}
 
 void H264PredicterHW::predIntraAngAdi(DistanceData* distanMatri, int mode) {
 	int iWidth = tu_width;
@@ -52,6 +188,13 @@ void H264PredicterHW::predIntraAngAdi(DistanceData* distanMatri, int mode) {
 	int x_offset = CALCURATIO;
 	int y_offset = CALCURATIO;
 	int max_index_number = CALCURATIO;
+	// chrome when tu size is [4,y] or [x,4]
+	if (tu_width < CALCURATIO) {
+		x_offset = CALCURATIO / 2;
+	}
+	if (tu_height < CALCURATIO) {
+		y_offset = CALCURATIO / 2;
+	}
 	int width_number = tu_width / x_offset;
 	int heigh_number = tu_height / y_offset;
 	int cal_matri_index = 0;
@@ -80,6 +223,7 @@ void H264PredicterHW::predIntraAngAdi(DistanceData* distanMatri, int mode) {
 
 void H264PredicterHW::firstGroupProcess() {
 	groupType = GROUD_TYPE_MIN;
+	extraType = EXTRACT_BOUND_16;
 	group256(min_index);
 	groupType = GROUD_TYPE_MAX;
 	group256(max_index);
@@ -128,6 +272,21 @@ void H264PredicterHW::predPixelIndex(int j, int i) {
 	int iHeight = tu_height;
 	int iXnN1, iX, iXn, iXnP2;
 	if ((iWidth == 4) && (iHeight == 4)) {
+		if (uiDirMode == 0) {
+			iXnN1 = i;
+			iX = i;
+			iXn = i;
+			iXnP2 = i;
+			convertXPoints(&iXnN1, &iX, &iXn, &iXnP2);
+			saveMaxMinIndex(iXnN1, iX, iXn, iXnP2);
+		}
+		if (uiDirMode == 1) {
+			iXnN1 = j;
+			iX = j;
+			iXn = j;
+			iXnP2 = j;
+			saveMaxMinIndex(iXnN1, iX, iXn, iXnP2);
+		}
 		if (uiDirMode == 3) {
 			if ((i == 3) && (j == 3)) {
 				iXnN1 = 6;
@@ -276,6 +435,21 @@ void H264PredicterHW::predPixelIndex(int j, int i) {
 	}
 
 	if (iHeight == 8 && iWidth == 8) {
+		if (uiDirMode == 0) {
+			iXnN1 = i;
+			iX = i;
+			iXn = i;
+			iXnP2 = i;
+			convertXPoints(&iXnN1, &iX, &iXn, &iXnP2);
+			saveMaxMinIndex(iXnN1, iX, iXn, iXnP2);
+		}
+		if (uiDirMode == 1) {
+			iXnN1 = j;
+			iX = j;
+			iXn = j;
+			iXnP2 = j;
+			saveMaxMinIndex(iXnN1, iX, iXn, iXnP2);
+		}
 		if (uiDirMode == 3) {
 			if ((i == 7) && (j == 7)) {
 				iXnN1 = 14;
@@ -421,6 +595,23 @@ void H264PredicterHW::predPixelIndex(int j, int i) {
 			saveMaxMinIndex(iXnN1, iX, iXn, iXnP2);
 		}
 	}
+	if (iHeight == 16 && iWidth == 16) {
+		if (uiDirMode == 0) {
+			iXnN1 = i;
+			iX = i;
+			iXn = i;
+			iXnP2 = i;
+			convertXPoints(&iXnN1, &iX, &iXn, &iXnP2);
+			saveMaxMinIndex(iXnN1, iX, iXn, iXnP2);
+		}
+		if (uiDirMode == 1) {
+			iXnN1 = j;
+			iX = j;
+			iXn = j;
+			iXnP2 = j;
+			saveMaxMinIndex(iXnN1, iX, iXn, iXnP2);
+		}
+	}
 
 }
 
@@ -429,6 +620,23 @@ void H264PredicterHW::predPixel(int j, int i) {
 	int iHeight = tu_height;
 	int iXnN1, iX, iXn, iXnP2;
 	if ((iWidth == 4) && (iHeight == 4)) {
+		if (uiDirMode == 0) {
+			iXnN1 = i;
+			iX = i;
+			iXn = i;
+			iXnP2 = i;
+			int linerefIndexMain = convertAboveSrcIndex2RefIndex(&iXnN1, &iX, &iXn, &iXnP2);
+			h264_dst[j][i] = lineRefer16[iX];
+		}
+		if (uiDirMode == 1) {
+			iXnN1 = j;
+			iX = j;
+			iXn = j;
+			iXnP2 = j;
+			int linerefIndexMain = convertLeftSrcIndex2RefIndex(&iXnN1, &iX, &iXn, &iXnP2);
+			h264_dst[j][i] = lineRefer16[iX];
+		}
+
 		if (uiDirMode == 3) {
 			if ((i == 3) && (j == 3)) {
 				iXnN1 = 6;
@@ -603,6 +811,22 @@ void H264PredicterHW::predPixel(int j, int i) {
 	}
 
 	if (iHeight == 8 && iWidth == 8) {
+		if (uiDirMode == 0) {
+			iXnN1 = i;
+			iX = i;
+			iXn = i;
+			iXnP2 = i;
+			int linerefIndexMain = convertAboveSrcIndex2RefIndex(&iXnN1, &iX, &iXn, &iXnP2);
+			h264_dst[j][i] = lineRefer16[iX];
+		}
+		if (uiDirMode == 1) {
+			iXnN1 = j;
+			iX = j;
+			iXn = j;
+			iXnP2 = j;
+			int linerefIndexMain = convertLeftSrcIndex2RefIndex(&iXnN1, &iX, &iXn, &iXnP2);
+			h264_dst[j][i] = lineRefer16[iX];
+		}
 		if (uiDirMode == 3) {
 			if ((i == 7) && (j == 7)) {
 				iXnN1 = 14;
@@ -775,6 +999,24 @@ void H264PredicterHW::predPixel(int j, int i) {
 			saveMaxMinIndex(iXnN1, iX, iXn, iXnP2);
 		}
 	}
+	if (iHeight == 16 && iWidth == 16) {
+		if (uiDirMode == 0) {
+			iXnN1 = i;
+			iX = i;
+			iXn = i;
+			iXnP2 = i;
+			int linerefIndexMain = convertAboveSrcIndex2RefIndex(&iXnN1, &iX, &iXn, &iXnP2);
+			h264_dst[j][i] = lineRefer16[iX];
+		}
+		if (uiDirMode == 1) {
+			iXnN1 = j;
+			iX = j;
+			iXn = j;
+			iXnP2 = j;
+			int linerefIndexMain = convertLeftSrcIndex2RefIndex(&iXnN1, &iX, &iXn, &iXnP2);
+			h264_dst[j][i] = lineRefer16[iX];
+		}
+	}
 }
 
 int H264PredicterHW::convertAboveSrcIndex2RefIndex(int* iYnN1, int* iY, int* iYn, int* iYnP2) {
@@ -848,73 +1090,6 @@ void H264PredicterHW::saveMaxMinIndex(int  iYnN1, int iY, int iYn, int iYnP2)
 	max_min_indexs[save_index][1] = iY + CENTRE_OFFSET_H264;
 	max_min_indexs[save_index][2] = iYn + CENTRE_OFFSET_H264;
 	max_min_indexs[save_index][3] = iYnP2 + CENTRE_OFFSET_H264;
-}
-
-void H264PredicterHW::group256(int index) {
-	int left128 = 0;
-	int right128 = 0;
-	int boud128 = MAX_INDEX / 2;
-	if (index <= boud128) {
-		left128 = 0;
-		right128 = boud128;
-	}
-	else {
-		left128 = boud128 + 1;
-		right128 = MAX_INDEX;
-	}
-	group128(left128, right128, index);
-}
-
-void H264PredicterHW::group128(int left, int right, int index) {
-	int left64 = 0;
-	int right64 = 0;
-	int boud64 = left + (right - left) / 2;
-	if (index <= boud64) {
-		left64 = left;
-		right64 = boud64;
-	}
-	else {
-		left64 = boud64 + 1;
-		right64 = right;
-	}
-	group64(left64, right64, index);
-}
-
-void H264PredicterHW::group64(int left, int right, int index) {
-	int left32 = 0;
-	int right32 = 0;
-	int boud32 = left + (right - left) / 2;
-	if (index <= boud32) {
-		left32 = left;
-		right32 = boud32;
-	}else {
-		left32 = boud32 + 1;
-		right32 = right;
-	}
-	group32(left32, right32, index);
-}
-
-void H264PredicterHW::group32(int left, int right, int index) {
-	int left16 = 0;
-	int right16 = 0;
-	int bounds[2] = { 0 };
-	int boud16 = left + (right - left) / 2;
-	if (index <= boud16) {
-		bounds[0] = left;
-		bounds[1] = boud16;
-	}
-	else {
-		bounds[0] = boud16 + 1;
-		bounds[1] = right;
-	}
-	if (groupType == GROUD_TYPE_MIN) {
-		minBounds[0] = bounds[0];
-		minBounds[1] = bounds[1];
-	}
-	else {
-		maxBounds[0] = bounds[0];
-		maxBounds[1] = bounds[1];
-	}
 }
 
 void H264PredicterHW::convertSrc(int* above, int *left) {

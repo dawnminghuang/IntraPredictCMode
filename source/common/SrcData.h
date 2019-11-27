@@ -10,7 +10,7 @@
 #define CU_SIZ_LOG_AVS2     6
 #define MAX_CU_SIZE_HEVC    64
 #define SRC_EXTEND_SIZE_HEVC 2
-#define MAX_CU_SIZE_H264 8
+#define MAX_CU_SIZE_H264 16
 #define NUM_EXTEND_SIZE_H264 2
 #define MAX_CU_SIZE_VP9 32
 #define NUM_EXTEND_SIZE_VP9 2

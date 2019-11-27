@@ -1,4 +1,5 @@
 #include "OutputWriter.h"
+//#define PRINT_ALL
 OutputWriter::OutputWriter() {
 	predictMode = 0;
 	modeInfoFp = NULL;
@@ -133,6 +134,7 @@ void  OutputWriter::writeModeInfoToFile(DistanceData *distanceData) {
 		for (int j = 0; j < distanceData->tu_height; j++) {
 			for (int i = 0; i < distanceData->tu_width; i++) {
 				if (modeInfoFp) {
+#ifdef PRINT_ALL
 					fprintf(modeInfoFp, "[");
 					fflush(modeInfoFp);
 					for (int k = 0; k < distanceData->distance_size; k++) {
@@ -141,6 +143,10 @@ void  OutputWriter::writeModeInfoToFile(DistanceData *distanceData) {
 					}
 					fprintf(modeInfoFp, "]");
 					fflush(modeInfoFp);
+#else
+					fprintf(modeInfoFp, "%4d", distanceData->distance_matri[j][i][2]);
+					fflush(modeInfoFp);
+#endif
 					if (i == (distanceData->tu_width - 1)) {
 						fprintf(modeInfoFp, "\n");
 						fflush(modeInfoFp);

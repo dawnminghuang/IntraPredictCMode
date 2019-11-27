@@ -18,6 +18,13 @@ typedef enum {
 	HOR_UP_PRED = 8
 } I4x4PredModes;
 
+typedef enum {
+	DC_PRED_CHROMA = 0,
+	VERT_PRED_CHROMA = 1,
+	HOR_PRED_CHROMA = 2,
+	PLANE_PRED_CHROMA = 3,
+} I4x4PredModesChroma;
+
 typedef int imgpel;
 
 // Notation for comments regarding prediction and predictors.
@@ -96,27 +103,42 @@ public:
 	H264PredicterCMode();
 	~H264PredicterCMode();
 	void predict();
+	void predIntraLumaAdi(DistanceData* distanMatri, int uiDirMode);
+	void predIntraChromaAdi(DistanceData* distanMatri, int uiDirMode);
 	void predIntraAngAdi(DistanceData* distanMatri, int uiDirMode);
 	void setBlockSize(int size);
 	void convertSrc(int* above, int *left);
 	void initDstData();
 	void deinitDstData();
+	void intra4x4_dc_pred(int *refAbove, int *refLeft);
+	void intra4x4_vert_pred(int *refAbove, int *refLeft);
+	void intra4x4_hor_pred(int *refAbove, int *refLeft);
 	void intra4x4_diag_down_left_pred(int *refAbove, int *refLeft);
 	void intra4x4_diag_down_right_pred(int *refAbove, int *refLeft);
 	void intra4x4_vert_right_pred(int *refAbove, int *refLeft);
 	void intra4x4_vert_left_pred(int *refAbove, int *refLeft);
 	void intra4x4_hor_up_pred(int *refAbove, int *refLeft);
 	void intra4x4_hor_down_pred(int *refAbove, int *refLeft);
+	void intra8x8_dc_pred(int *refAbove, int *refLeft);
+	void intra8x8_vert_pred(int *refAbove, int *refLeft);
+	void intra8x8_hor_pred(int *refAbove, int *refLeft);
 	void intra8x8_diag_down_right_pred(int *refAbove, int *refLeft);
 	void intra8x8_diag_down_left_pred(int *refAbove, int *refLeft);
 	void intra8x8_vert_right_pred(int *refAbove, int *refLeft);
 	void intra8x8_vert_left_pred(int *refAbove, int *refLeft);
 	void intra8x8_hor_up_pred(int *refAbove, int *refLeft);
 	void intra8x8_hor_down_pred(int *refAbove, int *refLeft);
+	void intra16x16_dc_pred(int *refAbove, int *refLeft);
+	void intra16x16_vert_pred(int *refAbove, int *refLeft);
+	void intra16x16_hor_pred(int *refAbove, int *refLeft);
+	void intra16x16_plane_pred(int *refAbove, int *refLeft);
+	void intrapred_chroma_plane(int *refAbove, int *refLeft);
 public:
     int max_dst_number;
 	int block_size;
 	int **h264_dst;
+	int iWidth;
+	int iHeight;
 
 };
 
